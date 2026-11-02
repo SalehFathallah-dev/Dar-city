@@ -9,3 +9,4 @@ dev-dist
 .vercel
 coverage
 supabase/.temp
+.netlify
