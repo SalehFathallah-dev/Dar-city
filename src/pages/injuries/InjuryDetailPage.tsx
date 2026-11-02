@@ -63,7 +63,7 @@ export default function InjuryDetailPage() {
   return (
     <div className="space-y-4">
       <PageHeader title={`${i.body_region} ${i.injury_type}`} icon={<HeartPulse className="h-6 w-6" />}
-        subtitle={<><Link className="font-semibold text-brand-orange" to={`/players/${i.player_id}`}>{i.players?.full_name}</Link> · #{i.players?.jersey_number ?? '–'} · {i.injury_code} · {formatDate(i.injury_date)} <DemoBadge show={i.is_demo} /></>}
+        subtitle={<><Link className="font-semibold text-brand-gold" to={`/players/${i.player_id}`}>{i.players?.full_name}</Link> · #{i.players?.jersey_number ?? '–'} · {i.injury_code} · {formatDate(i.injury_date)} <DemoBadge show={i.is_demo} /></>}
         actions={<>
           {caps.addFollowups && <Button icon={<ClipboardList className="h-4 w-4" />} onClick={() => setFuOpen(true)}>Add Follow-up</Button>}
           {caps.editMedical && <Button variant="secondary" icon={<Pencil className="h-4 w-4" />} onClick={() => navigate(`/injuries/${i.id}/edit`)}>Edit</Button>}
@@ -115,7 +115,7 @@ export default function InjuryDetailPage() {
       {tab === 'rehab' && (
         <Card title="Rehabilitation Programmes" actions={caps.editMedical && <Button size="sm" icon={<Plus className="h-4 w-4" />} onClick={() => setRehabOpen(true)}>Start Rehabilitation</Button>} padded={false}>
           {rehab.length ? rehab.map((r) => (
-            <Link key={r.id} to={`/rehabilitation/${r.id}`} className="flex flex-wrap items-center gap-3 border-b border-neutral-100 px-5 py-3 last:border-0 hover:bg-brand-beigeLight/50">
+            <Link key={r.id} to={`/rehabilitation/${r.id}`} className="flex flex-wrap items-center gap-3 border-b border-neutral-100 px-5 py-3 last:border-0 hover:bg-brand-cream/50">
               <Activity className="h-4 w-4 text-sky-600" /><div className="flex-1"><p className="text-sm font-semibold">{r.program_code} · started {formatDate(r.start_date)}</p><p className="text-xs text-neutral-500">{r.goals}</p></div>
               <Badge color="orange">{r.current_phase}</Badge><StatusBadge status={r.status} />
             </Link>
@@ -125,7 +125,7 @@ export default function InjuryDetailPage() {
       {tab === 'rtp' && (
         <Card title="Return-to-Play Decisions" actions={caps.editMedical && <Button size="sm" icon={<Plus className="h-4 w-4" />} onClick={() => navigate(`/return-to-play/new?injury=${i.id}`)}>New RTP Assessment</Button>} padded={false}>
           <div className="px-5"><Table headers={['Ref', 'Decision date', 'Decision', 'Pain', 'Physician']} empty={!rtp.length}>
-            {rtp.map((r) => <tr key={r.id} className="cursor-pointer hover:bg-brand-beigeLight/40" onClick={() => navigate(`/return-to-play/${r.id}`)}><Td className="font-mono text-xs">{r.rtp_code}</Td><Td>{formatDate(r.decision_date)}</Td><Td><StatusBadge status={r.decision} /></Td><Td>{r.pain_score ?? '—'}/10</Td><Td>{r.physician_name}</Td></tr>)}
+            {rtp.map((r) => <tr key={r.id} className="cursor-pointer hover:bg-brand-cream/40" onClick={() => navigate(`/return-to-play/${r.id}`)}><Td className="font-mono text-xs">{r.rtp_code}</Td><Td>{formatDate(r.decision_date)}</Td><Td><StatusBadge status={r.decision} /></Td><Td>{r.pain_score ?? '—'}/10</Td><Td>{r.physician_name}</Td></tr>)}
           </Table></div>
         </Card>
       )}
@@ -147,7 +147,7 @@ function InfoTile({ label, value, action }: { label: string; value: React.ReactN
   return (
     <div className="rounded-2xl border border-neutral-200 bg-white p-3 shadow-card">
       <div className="flex items-center justify-between"><p className="text-[10px] font-bold uppercase tracking-widest text-neutral-500">{label}</p>
-        {action && <button onClick={action} className="text-xs font-semibold text-brand-orange">Change</button>}</div>
+        {action && <button onClick={action} className="text-xs font-semibold text-brand-gold">Change</button>}</div>
       <div className="mt-1">{value}</div>
     </div>
   );
@@ -168,7 +168,7 @@ function FollowupsTab({ followups, onAdd, onPdf }: { followups: Followup[]; onAd
             <ResponsiveContainer width="100%" height={220}>
               <LineChart data={chart} margin={{ left: -20, right: 10, top: 10 }}>
                 <CartesianGrid stroke="#eee" vertical={false} /><XAxis dataKey="date" tick={{ fontSize: 11 }} /><YAxis domain={[0, 10]} ticks={[0, 2, 4, 6, 8, 10]} tick={{ fontSize: 11 }} />
-                <Tooltip /><Line dataKey="pain" name="Pain (0–10)" stroke="#D91E36" strokeWidth={3} dot={{ r: 5, fill: '#F4511E' }} />
+                <Tooltip /><Line dataKey="pain" name="Pain (0–10)" stroke="#C0283A" strokeWidth={3} dot={{ r: 5, fill: '#9A7634' }} />
               </LineChart>
             </ResponsiveContainer>
           ) : <EmptyState title="No follow-ups yet" />}
@@ -185,7 +185,7 @@ function FollowupsTab({ followups, onAdd, onPdf }: { followups: Followup[]; onAd
                   {rows.map(([label, k]) => {
                     const va = first[k], vb = last[k];
                     const changed = String(va ?? '') !== String(vb ?? '');
-                    return <tr key={k}><td className="py-2 text-xs font-semibold uppercase text-neutral-500">{label}</td><td className="py-2">{(va as string | number | null) ?? '—'}</td><td className={changed ? 'py-2 font-semibold text-brand-orange' : 'py-2'}>{(vb as string | number | null) ?? '—'}</td></tr>;
+                    return <tr key={k}><td className="py-2 text-xs font-semibold uppercase text-neutral-500">{label}</td><td className="py-2">{(va as string | number | null) ?? '—'}</td><td className={changed ? 'py-2 font-semibold text-brand-gold' : 'py-2'}>{(vb as string | number | null) ?? '—'}</td></tr>;
                   })}
                 </tbody>
               </table>

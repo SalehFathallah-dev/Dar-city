@@ -1,4 +1,5 @@
 import { ReportBuilder } from './pdf';
+import { getReportBrand, getReportClub } from './reportContext';
 import * as api from './api';
 import { calculateAge, fmt, formatDate, todayISO, daysBetween } from './format';
 import { daysLost, inRange, injuryAnalytics, isOpenInjury, incidencePer1000h, latestByPlayer, type DateRange } from './analytics';
@@ -17,6 +18,7 @@ function playerBlock(r: ReportBuilder, p: Player, extra: [string, unknown][] = [
     ['Jersey Number', p.jersey_number != null ? `#${p.jersey_number}` : null], ['Playing Position', p.position],
     ['Date of Birth', formatDate(p.date_of_birth)], ['Age', calculateAge(p.date_of_birth)],
     ...extra,
+    ['Report Date', formatDate(todayISO())], ['Physician', getReportBrand().name],
   ], 2);
 }
 
@@ -247,7 +249,7 @@ export async function clearanceCertificate(clearanceId: string): Promise<Generat
   if (!c) throw new Error('Clearance record not found');
   const p = await api.getPlayer(c.player_id);
   const r = await new ReportBuilder({ title: 'Medical Clearance Certificate', refPrefix: 'CLR', subtitle: c.clearance_code }).start();
-  r.paragraph(null, `This is to certify that the player named below was medically assessed by the Team Physician of Dar City Basketball Team and the following clearance decision was made on ${formatDate(c.decision_date)}.`);
+  r.paragraph(null, `This is to certify that the player named below was medically assessed by ${getReportBrand().name} (${getReportBrand().specialty}), team physician to ${getReportClub()?.name ?? 'the club'}, and the following clearance decision was made on ${formatDate(c.decision_date)}.`);
   playerBlock(r, p);
   r.section('Clearance Decision');
   r.highlight('Medical clearance status', c.clearance_status, c.clearance_status === 'Cleared for Full Participation' ? 'green' : c.clearance_status === 'Cleared with Restrictions' ? 'orange' : 'red');

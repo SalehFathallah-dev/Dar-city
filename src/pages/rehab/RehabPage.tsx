@@ -33,7 +33,7 @@ export default function RehabPage() {
         {data.loading ? <Spinner /> : data.error ? <ErrorBlock message={data.error} onRetry={data.reload} /> : (
           <Table headers={['Programme', 'Player', 'Injury', 'Start', 'Duration', 'Phase', 'Sessions', 'Status']} empty={!rows.length}>
             {rows.map((r) => (
-              <tr key={r.id} className="cursor-pointer hover:bg-brand-beigeLight/40" onClick={() => navigate(`/rehabilitation/${r.id}`)}>
+              <tr key={r.id} className="cursor-pointer hover:bg-brand-cream/40" onClick={() => navigate(`/rehabilitation/${r.id}`)}>
                 <Td className="font-mono text-xs">{r.program_code} <DemoBadge show={r.is_demo} /></Td>
                 <Td className="font-semibold">{r.players?.full_name}</Td>
                 <Td>{r.injuries?.injury_code}<span className="block text-xs text-neutral-500">{r.injuries?.diagnosis ?? r.injuries?.injury_type}</span></Td>

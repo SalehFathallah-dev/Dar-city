@@ -5,7 +5,7 @@ import { formatDate } from '../lib/format';
 export interface TimelineItem { id: string; date: string; title: string; description?: ReactNode; tone?: 'orange' | 'red' | 'green' | 'dark' | 'beige' | 'blue'; icon?: ReactNode; meta?: ReactNode }
 
 export function Timeline({ items }: { items: TimelineItem[] }) {
-  const tones = { orange: 'bg-brand-orange', red: 'bg-brand-red', green: 'bg-emerald-500', dark: 'bg-brand-charcoal', beige: 'bg-brand-beige', blue: 'bg-sky-500' };
+  const tones = { orange: 'bg-brand-gold', red: 'bg-brand-red', green: 'bg-emerald-500', dark: 'bg-brand-navy', beige: 'bg-brand-sand', blue: 'bg-sky-500' };
   return (
     <ol className="relative ml-3 border-l-2 border-neutral-200">
       {items.map((it) => (

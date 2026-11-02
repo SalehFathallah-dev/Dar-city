@@ -17,13 +17,13 @@ export default function RtpDetailPage() {
   return (
     <div className="space-y-4">
       <PageHeader title={`RTP Assessment ${r.rtp_code}`} icon={<Activity className="h-6 w-6" />}
-        subtitle={<><Link className="font-semibold text-brand-orange" to={`/players/${r.player_id}`}>{r.players?.full_name}</Link> · <Link className="text-brand-orange" to={`/injuries/${r.injury_id}`}>{r.injuries?.injury_code}</Link> · {formatDate(r.assessment_date)} <DemoBadge show={r.is_demo} /></>}
+        subtitle={<><Link className="font-semibold text-brand-gold" to={`/players/${r.player_id}`}>{r.players?.full_name}</Link> · <Link className="text-brand-gold" to={`/injuries/${r.injury_id}`}>{r.injuries?.injury_code}</Link> · {formatDate(r.assessment_date)} <DemoBadge show={r.is_demo} /></>}
         actions={<Button icon={<FileText className="h-4 w-4" />} loading={pdf.busy} onClick={() => pdf.run(() => reports.rtpReport(r.id))}>RTP PDF</Button>} />
       <Card title="Decision">
         <div className="flex flex-wrap items-center gap-4">
           <StatusBadge status={r.decision} />
           <span className="text-sm text-neutral-600">{formatDate(r.decision_date)} · {r.physician_name}</span>
-          <span className="ml-auto font-serif text-xl italic text-brand-charcoal">{r.signature}</span>
+          <span className="ml-auto font-serif text-xl italic text-brand-navy">{r.signature}</span>
         </div>
         {r.clinical_notes && <p className="mt-3 text-sm">{r.clinical_notes}</p>}
       </Card>

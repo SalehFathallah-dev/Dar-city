@@ -28,7 +28,7 @@ Deno.serve(async (req) => {
   const { data: me } = await caller.from('profiles').select('role, is_active').eq('id', userData.user.id).single();
   if (!me || !me.is_active || me.role !== 'super_admin') return json({ error: 'Only a Super Administrator can manage users' }, 403);
 
-  let body: { action?: string; email?: string; password?: string; full_name?: string; role?: string; title?: string };
+  let body: { action?: string; email?: string; password?: string; full_name?: string; role?: string; title?: string; club_ids?: string[] };
   try { body = await req.json(); } catch { return json({ error: 'Invalid JSON body' }, 400); }
   if (body.action !== 'create') return json({ error: 'Unsupported action' }, 400);
 
@@ -51,6 +51,17 @@ Deno.serve(async (req) => {
     .update({ role: body.role, is_active: true, full_name: fullName, title: body.title?.trim() || null })
     .eq('id', created.user.id);
   if (profErr) return json({ error: `User created but role assignment failed: ${profErr.message}` }, 500);
+
+  // Club access (only clubs that exist). Super administrators see all clubs automatically.
+  const clubIds = Array.isArray(body.club_ids) ? body.club_ids.filter((c) => typeof c === 'string').slice(0, 200) : [];
+  if (clubIds.length && body.role !== 'super_admin') {
+    const { data: valid } = await admin.from('clubs').select('id').in('id', clubIds);
+    const rows = (valid ?? []).map((c: { id: string }) => ({ club_id: c.id, user_id: created.user!.id, created_by: userData.user.id }));
+    if (rows.length) {
+      const { error: memErr } = await admin.from('club_members').insert(rows);
+      if (memErr) return json({ error: `User created but club assignment failed: ${memErr.message}` }, 500);
+    }
+  }
 
   await admin.from('audit_logs').insert({
     user_id: userData.user.id, action: 'INSERT', record_type: 'auth_users', record_id: created.user.id,

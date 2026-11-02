@@ -1,40 +1,62 @@
 import { jsPDF } from 'jspdf';
 import autoTable, { type RowInput } from 'jspdf-autotable';
-import { APP } from './constants';
-import { formatDate, formatDateTime, referenceNumber } from './format';
+import { formatDate, formatDateTime, referenceNumber, todayISO } from './format';
+import { getReportBrand, getReportClub } from './reportContext';
+import type { Club } from './types';
 
-const ORANGE: [number, number, number] = [244, 81, 30];
-const RED: [number, number, number] = [217, 30, 54];
-const BLACK: [number, number, number] = [23, 23, 23];
-const CHARCOAL: [number, number, number] = [36, 36, 36];
-const BEIGE: [number, number, number] = [216, 204, 174];
-const GREY: [number, number, number] = [110, 110, 110];
+// Medical brand palette (navy & gold)
+const NAVY: [number, number, number] = [20, 35, 71];
+const GOLD: [number, number, number] = [154, 118, 52];
+const GOLD_LIGHT: [number, number, number] = [201, 168, 102];
+const CREAM: [number, number, number] = [247, 243, 234];
+const RED: [number, number, number] = [192, 40, 58];
+const BLACK: [number, number, number] = [20, 24, 36];
+const GREY: [number, number, number] = [105, 110, 122];
+const BEIGE = GOLD_LIGHT;
+const ORANGE = GOLD;
+const CHARCOAL = NAVY;
 
 const PAGE_W = 210, PAGE_H = 297, MARGIN = 15, CONTENT_W = PAGE_W - MARGIN * 2;
-const TOP_CONT = 30, BOTTOM = PAGE_H - 22;
+const TOP_CONT = 30, BOTTOM = PAGE_H - 24;
 
-let logoCache: { data: string; w: number; h: number } | null = null;
-async function loadLogo() {
-  if (logoCache) return logoCache;
-  const res = await fetch('/logo.png');
-  const blob = await res.blob();
-  const data: string = await new Promise((resolve, reject) => {
-    const r = new FileReader();
-    r.onload = () => resolve(r.result as string);
-    r.onerror = reject;
-    r.readAsDataURL(blob);
-  });
-  const dims: { w: number; h: number } = await new Promise((resolve) => {
-    const img = new Image();
-    img.onload = () => resolve({ w: img.naturalWidth, h: img.naturalHeight });
-    img.onerror = () => resolve({ w: 356, h: 379 });
-    img.src = data;
-  });
-  logoCache = { data, ...dims };
-  return logoCache;
+interface Img { data: string; w: number; h: number }
+const imgCache = new Map<string, Promise<Img | null>>();
+/** Loads any image (PNG/JPG/WEBP/SVG) and rasterises it to PNG, preserving its aspect ratio. */
+function loadImage(url: string | null | undefined): Promise<Img | null> {
+  if (!url) return Promise.resolve(null);
+  if (!imgCache.has(url)) {
+    imgCache.set(url, new Promise((resolve) => {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => {
+        try {
+          let w = img.naturalWidth || 600, h = img.naturalHeight || 600;
+          const scale = Math.min(1, 900 / Math.max(w, h)) || 1;
+          w = Math.round(w * scale); h = Math.round(h * scale);
+          const c = document.createElement('canvas');
+          c.width = w; c.height = h;
+          c.getContext('2d')!.drawImage(img, 0, 0, w, h);
+          resolve({ data: c.toDataURL('image/png'), w, h });
+        } catch { resolve(null); }
+      };
+      img.onerror = () => resolve(null);
+      img.src = url;
+    }));
+  }
+  return imgCache.get(url)!;
 }
 
-export interface ReportOptions { title: string; refPrefix: string; subtitle?: string; physician?: string; landscape?: boolean }
+/** Draws an image inside a box (contain) – never stretched. */
+function drawContained(d: jsPDF, img: Img, x: number, y: number, boxW: number, boxH: number, align: 'left' | 'center' = 'center') {
+  const ratio = img.w / img.h;
+  let w = boxW, h = boxW / ratio;
+  if (h > boxH) { h = boxH; w = boxH * ratio; }
+  const dx = align === 'center' ? x + (boxW - w) / 2 : x;
+  d.addImage(img.data, 'PNG', dx, y + (boxH - h) / 2, w, h, undefined, 'FAST');
+  return w;
+}
+
+export interface ReportOptions { title: string; refPrefix: string; subtitle?: string; physician?: string; club?: Club | null; landscape?: boolean }
 
 export class ReportBuilder {
   doc: jsPDF;
@@ -42,55 +64,75 @@ export class ReportBuilder {
   readonly ref: string;
   readonly title: string;
   private physician: string;
-  private logo: { data: string; w: number; h: number } | null = null;
   private subtitle?: string;
+  private club: Club | null;
+  private brandLogo: Img | null = null;
+  private clubLogo: Img | null = null;
+  private signatureImg: Img | null = null;
 
   constructor(opts: ReportOptions) {
+    const brand = getReportBrand();
     this.doc = new jsPDF({ unit: 'mm', format: 'a4', compress: true });
     this.ref = referenceNumber(opts.refPrefix);
     this.title = opts.title;
     this.subtitle = opts.subtitle;
-    this.physician = opts.physician ?? APP.physician;
-    this.doc.setProperties({ title: `${opts.title} – ${this.ref}`, author: this.physician, creator: APP.name, subject: 'Confidential medical document' });
+    this.club = opts.club === undefined ? getReportClub() : opts.club;
+    this.physician = opts.physician ?? brand.name;
+    this.doc.setProperties({ title: `${opts.title} – ${this.ref}`, author: brand.name, creator: `${brand.name} – ${brand.specialty}`, subject: 'Confidential medical document' });
   }
 
   async start() {
-    try { this.logo = await loadLogo(); } catch { this.logo = null; }
+    const brand = getReportBrand();
+    const { resolveClubLogo } = await import('./api');
+    const clubLogoUrl = await resolveClubLogo(this.club?.logo_url).catch(() => null);
+    [this.brandLogo, this.clubLogo, this.signatureImg] = await Promise.all([loadImage(brand.logoUrl), loadImage(clubLogoUrl), loadImage(brand.signatureUrl)]);
     this.drawFullHeader();
     return this;
   }
 
   private drawFullHeader() {
     const d = this.doc;
-    d.setFillColor(...BLACK);
-    d.rect(0, 0, PAGE_W, 36, 'F');
-    d.setFillColor(...ORANGE);
-    d.rect(0, 36, PAGE_W, 1.6, 'F');
-    d.setFillColor(...RED);
-    d.rect(0, 37.6, PAGE_W, 0.8, 'F');
-    if (this.logo) {
-      const h = 28, w = (this.logo.w / this.logo.h) * h;
-      d.addImage(this.logo.data, 'PNG', MARGIN, 4, w, h);
+    const brand = getReportBrand();
+    // A. Medical brand
+    if (this.brandLogo) drawContained(d, this.brandLogo, MARGIN, 7, 78, 22, 'left');
+    d.setTextColor(...NAVY); d.setFont('helvetica', 'bold'); d.setFontSize(14);
+    d.text(brand.name.toUpperCase(), PAGE_W - MARGIN, 14, { align: 'right' });
+    d.setTextColor(...GOLD); d.setFontSize(8.5);
+    d.text(brand.specialty.toUpperCase(), PAGE_W - MARGIN, 19.5, { align: 'right' });
+    if (brand.contact) {
+      d.setFont('helvetica', 'normal'); d.setFontSize(7.2); d.setTextColor(...GREY);
+      d.text(d.splitTextToSize(brand.contact, 90).slice(0, 2), PAGE_W - MARGIN, 24, { align: 'right' });
     }
-    d.setTextColor(255, 255, 255);
-    d.setFont('helvetica', 'bold'); d.setFontSize(15);
-    d.text(APP.team, 48, 13);
-    d.setFontSize(9.5); d.setTextColor(...BEIGE);
-    d.text(APP.department, 48, 19);
-    d.text(APP.system, 48, 24.5);
-    d.setFont('helvetica', 'normal'); d.setFontSize(8.5); d.setTextColor(255, 255, 255);
-    d.text(`Physician: ${this.physician}`, 48, 30.5);
-    d.setFontSize(8); d.setTextColor(...BEIGE);
-    d.text('Reference No.', PAGE_W - MARGIN, 12, { align: 'right' });
-    d.setTextColor(255, 255, 255); d.setFont('helvetica', 'bold');
-    d.text(this.ref, PAGE_W - MARGIN, 17, { align: 'right' });
-    d.setFont('helvetica', 'normal'); d.setTextColor(...BEIGE);
-    d.text('Generated', PAGE_W - MARGIN, 24, { align: 'right' });
-    d.setTextColor(255, 255, 255);
-    d.text(formatDateTime(new Date().toISOString()), PAGE_W - MARGIN, 29, { align: 'right' });
+    d.setDrawColor(...GOLD); d.setLineWidth(0.5);
+    d.line(MARGIN, 32, PAGE_W - MARGIN, 32);
+    // B. Club identity (separate band)
+    d.setFillColor(...NAVY);
+    d.rect(0, 35, PAGE_W, 19, 'F');
+    d.setFillColor(255, 255, 255);
+    d.roundedRect(MARGIN, 36.5, 16, 16, 1.5, 1.5, 'F');
+    if (this.clubLogo) drawContained(d, this.clubLogo, MARGIN + 1, 37.5, 14, 14);
+    else if (this.club) {
+      d.setTextColor(...NAVY); d.setFont('helvetica', 'bold'); d.setFontSize(9);
+      d.text(this.club.short_name.slice(0, 3).toUpperCase(), MARGIN + 8, 46, { align: 'center' });
+    }
+    d.setFont('helvetica', 'bold'); d.setFontSize(6.5); d.setTextColor(...GOLD_LIGHT);
+    d.text('CLUB', MARGIN + 20, 40.5);
+    d.setFontSize(11); d.setTextColor(255, 255, 255);
+    d.text((this.club?.name ?? 'No club selected').toUpperCase(), MARGIN + 20, 45.8, { maxWidth: 110 });
+    d.setFont('helvetica', 'normal'); d.setFontSize(7.8); d.setTextColor(...GOLD_LIGHT);
+    const clubLine = [this.club?.country, this.club?.city, this.club?.current_season && `Season ${this.club.current_season}`].filter(Boolean).join('  ·  ');
+    if (clubLine) d.text(clubLine.toUpperCase(), MARGIN + 20, 50.5);
+    d.setFontSize(6.8); d.setTextColor(...GOLD_LIGHT);
+    d.text('REFERENCE NO.', PAGE_W - MARGIN, 40, { align: 'right' });
+    d.text('DATE OF ISSUE', PAGE_W - MARGIN, 47.5, { align: 'right' });
+    d.setFont('helvetica', 'bold'); d.setFontSize(8.5); d.setTextColor(255, 255, 255);
+    d.text(this.ref, PAGE_W - MARGIN, 44, { align: 'right' });
+    d.text(formatDate(todayISO()), PAGE_W - MARGIN, 51.5, { align: 'right' });
+    d.setFillColor(...GOLD);
+    d.rect(0, 54, PAGE_W, 0.9, 'F');
     // Title
-    this.y = 49;
-    d.setTextColor(...BLACK); d.setFont('helvetica', 'bold'); d.setFontSize(15);
+    this.y = 66;
+    d.setTextColor(...NAVY); d.setFont('helvetica', 'bold'); d.setFontSize(15);
     d.text(this.title.toUpperCase(), MARGIN, this.y);
     if (this.subtitle) {
       this.y += 5.5;
@@ -102,15 +144,17 @@ export class ReportBuilder {
 
   private drawContinuationHeader() {
     const d = this.doc;
-    if (this.logo) {
-      const h = 13, w = (this.logo.w / this.logo.h) * h;
-      d.addImage(this.logo.data, 'PNG', MARGIN, 5, w, h);
-    }
-    d.setFont('helvetica', 'bold'); d.setFontSize(9.5); d.setTextColor(...BLACK);
-    d.text(APP.team, MARGIN + 16, 10);
-    d.setFont('helvetica', 'normal'); d.setFontSize(8); d.setTextColor(...GREY);
-    d.text(`${this.title}  ·  ${this.ref}`, MARGIN + 16, 15);
-    d.setDrawColor(...ORANGE); d.setLineWidth(0.6);
+    let x = MARGIN;
+    if (this.brandLogo) x += drawContained(d, this.brandLogo, MARGIN, 5, 36, 12, 'left') + 4;
+    d.setDrawColor(...GOLD_LIGHT); d.setLineWidth(0.2);
+    d.line(x, 6, x, 17);
+    x += 4;
+    if (this.clubLogo) x += drawContained(d, this.clubLogo, x, 6, 11, 11, 'left') + 3;
+    d.setFont('helvetica', 'bold'); d.setFontSize(8.5); d.setTextColor(...NAVY);
+    d.text(this.club?.short_name ?? '', x, 10.5);
+    d.setFont('helvetica', 'normal'); d.setFontSize(7.5); d.setTextColor(...GREY);
+    d.text(`${this.title}  ·  ${this.ref}`, PAGE_W - MARGIN, 10.5, { align: 'right' });
+    d.setDrawColor(...GOLD); d.setLineWidth(0.5);
     d.line(MARGIN, 21, PAGE_W - MARGIN, 21);
   }
 
@@ -183,8 +227,8 @@ export class ReportBuilder {
       body,
       margin: { left: MARGIN, right: MARGIN, top: TOP_CONT, bottom: 24 },
       styles: { font: 'helvetica', fontSize: opts.fontSize ?? 8.2, cellPadding: 1.8, textColor: BLACK, lineColor: [225, 225, 225], lineWidth: 0.1, overflow: 'linebreak' },
-      headStyles: { fillColor: BLACK, textColor: [255, 255, 255], fontStyle: 'bold', fontSize: (opts.fontSize ?? 8.2) - 0.2 },
-      alternateRowStyles: { fillColor: [247, 244, 236] },
+      headStyles: { fillColor: NAVY, textColor: [255, 255, 255], fontStyle: 'bold', fontSize: (opts.fontSize ?? 8.2) - 0.2 },
+      alternateRowStyles: { fillColor: CREAM },
       columnStyles: opts.columnStyles,
     });
     this.y = ((this.doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY) + 6;
@@ -196,7 +240,7 @@ export class ReportBuilder {
     const w = (CONTENT_W - (stats.length - 1) * 3) / stats.length;
     stats.forEach(([label, value], i) => {
       const x = MARGIN + i * (w + 3);
-      d.setFillColor(247, 244, 236); d.setDrawColor(...BEIGE);
+      d.setFillColor(...CREAM); d.setDrawColor(...BEIGE);
       d.roundedRect(x, this.y, w, 16, 1.5, 1.5, 'FD');
       d.setFont('helvetica', 'bold'); d.setFontSize(14); d.setTextColor(...ORANGE);
       d.text(String(value), x + w / 2, this.y + 7.5, { align: 'center' });
@@ -228,7 +272,9 @@ export class ReportBuilder {
     d.setDrawColor(...BLACK); d.setLineWidth(0.3);
     d.line(MARGIN, this.y + 12, MARGIN + 75, this.y + 12);
     d.line(PAGE_W - MARGIN - 50, this.y + 12, PAGE_W - MARGIN, this.y + 12);
-    if (opts.signedText) {
+    if (this.signatureImg && opts.signedText !== null) {
+      drawContained(d, this.signatureImg, MARGIN + 1, this.y - 1, 60, 12, 'left');
+    } else if (opts.signedText) {
       d.setFont('times', 'italic'); d.setFontSize(13); d.setTextColor(...CHARCOAL);
       d.text(opts.signedText, MARGIN + 2, this.y + 10);
     }
@@ -239,7 +285,7 @@ export class ReportBuilder {
     d.setFont('helvetica', 'bold'); d.setFontSize(8.5); d.setTextColor(...BLACK);
     d.text(name, MARGIN, this.y + 17);
     d.setFont('helvetica', 'normal'); d.setFontSize(7.5); d.setTextColor(...GREY);
-    d.text(opts.label ?? 'Team Physician – Signature', MARGIN, this.y + 21);
+    d.text(opts.label ?? `${getReportBrand().specialty} – Physician Signature`, MARGIN, this.y + 21);
     d.text('Date', PAGE_W - MARGIN - 50, this.y + 17);
     this.y += 28;
   }
@@ -252,20 +298,23 @@ export class ReportBuilder {
     this.y += 2;
   }
 
-  /** Adds continuation headers, footers and "Page X of Y" numbering. */
+  /** Adds continuation headers, the official footer and "Page X of Y" numbering. */
   finish(): Blob {
     const d = this.doc;
+    const brand = getReportBrand();
     const total = d.getNumberOfPages();
     for (let p = 1; p <= total; p++) {
       d.setPage(p);
       if (p > 1) this.drawContinuationHeader();
-      d.setDrawColor(...BEIGE); d.setLineWidth(0.3);
-      d.line(MARGIN, PAGE_H - 15, PAGE_W - MARGIN, PAGE_H - 15);
-      d.setFont('helvetica', 'normal'); d.setFontSize(7); d.setTextColor(...GREY);
-      d.text('CONFIDENTIAL MEDICAL DOCUMENT – Dar City Basketball Team, Tanzania. Unauthorised disclosure is prohibited.', MARGIN, PAGE_H - 10.5);
-      d.text(`Ref: ${this.ref}`, MARGIN, PAGE_H - 7);
-      d.setFont('helvetica', 'bold');
-      d.text(`Page ${p} of ${total}`, PAGE_W - MARGIN, PAGE_H - 10.5, { align: 'right' });
+      d.setDrawColor(...GOLD); d.setLineWidth(0.4);
+      d.line(MARGIN, PAGE_H - 17, PAGE_W - MARGIN, PAGE_H - 17);
+      d.setFont('helvetica', 'bold'); d.setFontSize(7.4); d.setTextColor(...NAVY);
+      d.text(`${brand.name}  ·  ${brand.specialty}  ·  Official Team Medical Records`, MARGIN, PAGE_H - 12.5);
+      d.setFont('helvetica', 'normal'); d.setFontSize(6.6); d.setTextColor(...GREY);
+      d.text(`Confidential medical document${this.club ? ` – ${this.club.name}` : ''}. Unauthorised disclosure is prohibited.`, MARGIN, PAGE_H - 9);
+      d.text(`Ref: ${this.ref}  ·  Issued ${formatDateTime(new Date().toISOString())}`, MARGIN, PAGE_H - 5.8);
+      d.setFont('helvetica', 'bold'); d.setFontSize(7.4); d.setTextColor(...NAVY);
+      d.text(`Page ${p} of ${total}`, PAGE_W - MARGIN, PAGE_H - 12.5, { align: 'right' });
     }
     return d.output('blob');
   }

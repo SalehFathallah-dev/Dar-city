@@ -39,7 +39,7 @@ export function DocumentsPanel({ playerId, injuryId, examinationId, showPlayer }
         <ul className="divide-y divide-neutral-100">
           {docs.data.map((d) => (
             <li key={d.id} className="flex flex-wrap items-center gap-3 py-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-brand-beigeLight text-brand-charcoal">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-brand-cream text-brand-navy">
                 {d.mime_type === 'application/pdf' ? <FileText className="h-5 w-5" /> : <ImageIcon className="h-5 w-5" />}
               </div>
               <div className="min-w-0 flex-1">
@@ -105,7 +105,7 @@ function UploadModal({ open, onClose, playerId, injuryId, examinationId, onDone 
         <Field label="Description"><Textarea value={form.description} onChange={(e) => set('description')(e.target.value)} rows={2} /></Field>
         <Field label="File (PDF, JPG, JPEG, PNG – max 10 MB)" required error={errors.file}>
           <input type="file" accept="application/pdf,image/jpeg,image/png,.pdf,.jpg,.jpeg,.png" onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-            className="block w-full text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-brand-charcoal file:px-4 file:py-2 file:text-sm file:font-semibold file:text-white" />
+            className="block w-full text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-brand-navy file:px-4 file:py-2 file:text-sm file:font-semibold file:text-white" />
         </Field>
         <p className="text-xs text-neutral-500">Files are stored in a private, access-controlled bucket and are never publicly accessible.</p>
       </div>

@@ -36,7 +36,7 @@ export function FollowupModal({ injury, open, onClose, onSaved, previous }: { in
     <Modal open={open} onClose={onClose} title={`Follow-up · ${injury.injury_code}`} size="lg"
       footer={<><Button variant="secondary" onClick={onClose}>Cancel</Button><Button loading={saving} onClick={save}>Save Follow-up</Button></>}>
       <div className="space-y-4">
-        {previous && <p className="rounded-lg bg-brand-beigeLight p-3 text-xs text-neutral-700">Previous follow-up: pain {previous.pain_score ?? '—'}/10, swelling {previous.swelling ?? '—'}, ROM {previous.range_of_motion ?? '—'}, strength {previous.muscle_strength ?? '—'}.</p>}
+        {previous && <p className="rounded-lg bg-brand-cream p-3 text-xs text-neutral-700">Previous follow-up: pain {previous.pain_score ?? '—'}/10, swelling {previous.swelling ?? '—'}, ROM {previous.range_of_motion ?? '—'}, strength {previous.muscle_strength ?? '—'}.</p>}
         <Grid>
           <Field label="Follow-up date" required error={errors.followup_date}><Input type="date" value={f.followup_date} max={todayISO()} onChange={(e) => set('followup_date')(e.target.value)} error={!!errors.followup_date} /></Field>
           <Field label="Next follow-up date" error={errors.next_followup_date}><Input type="date" value={f.next_followup_date} onChange={(e) => set('next_followup_date')(e.target.value)} error={!!errors.next_followup_date} /></Field>

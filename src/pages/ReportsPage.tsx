@@ -29,7 +29,7 @@ export default function ReportsPage() {
   const item = (n: number, title: string, desc: string, control: ReactNode, gen: (() => Promise<GeneratedReport>) | null, allowed = true) => (
     <Card key={title} className="flex flex-col">
       <div className="flex items-start gap-3">
-        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-brand-charcoal font-display text-lg font-bold text-brand-orange">{n}</span>
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-brand-navy font-display text-lg font-bold text-brand-gold">{n}</span>
         <div className="min-w-0"><h3 className="font-semibold text-neutral-900">{title}</h3><p className="text-xs text-neutral-500">{desc}</p></div>
       </div>
       {allowed ? (
@@ -45,7 +45,7 @@ export default function ReportsPage() {
 
   return (
     <div>
-      <PageHeader title="Medical Reports" subtitle="Professional A4 PDF reports with the official Dar City logo – preview before downloading" icon={<FileText className="h-6 w-6" />} />
+      <PageHeader title="Medical Reports" subtitle="A4 PDF reports carrying the medical brand and the selected club's logo – preview before downloading" icon={<FileText className="h-6 w-6" />} />
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {item(1, 'Individual Player Medical Profile', 'Complete medical summary for one player', <PlayerPicker value={sel.p1 ?? ''} onChange={set('p1')} includeInactive />, sel.p1 ? () => reports.playerMedicalProfile(sel.p1!) : null, med)}
         {item(2, 'Player Registration Report', 'Personal and basketball registration details', <PlayerPicker value={sel.p2 ?? ''} onChange={set('p2')} includeInactive />, sel.p2 ? () => reports.playerRegistration(sel.p2!) : null, caps.viewEmergencyContacts || med)}

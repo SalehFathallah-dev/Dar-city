@@ -208,7 +208,7 @@ export default function ExaminationFormPage() {
         </FormSection>
 
         <FormSection title="Medical Clearance & Signature" icon={<Signature className="h-5 w-5" />}>
-          <p className="mb-4 rounded-lg bg-brand-beigeLight p-3 text-xs text-neutral-700">Clearance is a clinical decision made and documented by the physician. It is never approved automatically based on normal values. Leave blank if the decision is still pending.</p>
+          <p className="mb-4 rounded-lg bg-brand-cream p-3 text-xs text-neutral-700">Clearance is a clinical decision made and documented by the physician. It is never approved automatically based on normal values. Leave blank if the decision is still pending.</p>
           <Grid>
             <Field label="Clearance decision" className="sm:col-span-2"><Select value={form.clearance_status} onChange={(e) => set('clearance_status')(e.target.value)} options={EXAM_CLEARANCE} placeholder="Decision pending" /></Field>
             {form.clearance_status && (<>

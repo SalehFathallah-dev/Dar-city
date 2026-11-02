@@ -6,12 +6,14 @@ import * as reports from '../../lib/reports';
 import { useAsync } from '../../hooks/useAsync';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
+import { useClub } from '../../context/ClubContext';
+import { ClubLogo } from '../../components/Branding';
 import { APP, EXAM_CLEARANCE } from '../../lib/constants';
 import { bmiCategory, calculateAge, formatDate, formatDateTime, todayISO } from '../../lib/format';
 import { daysLost } from '../../lib/analytics';
 import type { MedicalHistory } from '../../lib/types';
 import {
-  Badge, Button, Card, DemoBadge, DetailGrid, EmptyState, ErrorBlock, Field, Grid, Input, Logo, Modal, PlayerAvatar, Select, Spinner, StatusBadge, Table, Tabs, Td, Textarea,
+  Badge, Button, Card, DemoBadge, DetailGrid, EmptyState, ErrorBlock, Field, Grid, Input, Modal, PlayerAvatar, Select, Spinner, StatusBadge, Table, Tabs, Td, Textarea,
 } from '../../components/ui';
 import { Timeline, type TimelineItem } from '../../components/Timeline';
 import { DocumentsPanel } from '../../components/DocumentsPanel';
@@ -27,6 +29,7 @@ export default function PlayerProfilePage() {
   const tab = (params.get('tab') as TabId) || 'overview';
   const setTab = (t: TabId) => setParams({ tab: t }, { replace: true });
   const pdf = useReportPreview();
+  const { club } = useClub();
 
   const player = useAsync(() => api.getPlayer(id!), [id]);
   const contacts = useAsync(() => caps.viewEmergencyContacts ? api.listContacts(id!) : Promise.resolve([]), [id, caps.viewEmergencyContacts]);
@@ -68,17 +71,17 @@ export default function PlayerProfilePage() {
   return (
     <div className="space-y-5">
       {/* Header */}
-      <div className="relative overflow-hidden rounded-3xl bg-brand-charcoal p-5 text-white shadow-xl sm:p-6">
-        <Logo size={120} className="pointer-events-none absolute -right-4 -top-4 opacity-10" />
+      <div className="relative overflow-hidden rounded-3xl bg-brand-navy p-5 text-white shadow-xl sm:p-6">
+        <ClubLogo logo={club?.logo_url} name={club?.short_name ?? ''} size={110} className="pointer-events-none absolute -right-3 -top-3 opacity-15" />
         <div className="relative flex flex-col gap-5 sm:flex-row sm:items-center">
           <PlayerAvatar name={p.full_name} photoPath={p.photo_path} size={96} />
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="font-display text-4xl font-extrabold text-brand-orange">#{p.jersey_number ?? '–'}</span>
+              <span className="font-display text-4xl font-extrabold text-brand-gold">#{p.jersey_number ?? '–'}</span>
               <h1 className="font-display text-3xl font-bold uppercase tracking-wide">{p.full_name}</h1>
               <DemoBadge show={p.is_demo} />
             </div>
-            <p className="text-sm text-brand-beige">{p.position} · {p.player_code} · {p.team_category}</p>
+            <p className="text-sm text-brand-sand">{p.position} · {p.player_code} · {p.team_category}</p>
             <div className="mt-3 grid grid-cols-2 gap-3 text-sm sm:grid-cols-5">
               {[['Age', `${calculateAge(p.date_of_birth) ?? '—'} yrs`], ['Height', p.height_cm ? `${p.height_cm} cm` : '—'], ['Weight', p.weight_kg ? `${p.weight_kg} kg` : '—'], ['BMI', p.bmi ?? '—'], ['Status', p.status.toUpperCase()]].map(([k, v]) => (
                 <div key={k as string}><p className="text-[10px] font-semibold uppercase tracking-widest text-neutral-400">{k}</p><p className="font-semibold">{v}</p></div>
@@ -126,7 +129,7 @@ export default function PlayerProfilePage() {
                   </Card>
                   <Card title="Active Injuries" className="lg:col-span-3" padded={false}>
                     {m.injuries.filter((i) => !['Recovered', 'Closed'].includes(i.status)).length ? m.injuries.filter((i) => !['Recovered', 'Closed'].includes(i.status)).map((i) => (
-                      <Link key={i.id} to={`/injuries/${i.id}`} className="flex flex-wrap items-center gap-3 border-b border-neutral-100 px-5 py-3 last:border-0 hover:bg-brand-beigeLight/50">
+                      <Link key={i.id} to={`/injuries/${i.id}`} className="flex flex-wrap items-center gap-3 border-b border-neutral-100 px-5 py-3 last:border-0 hover:bg-brand-cream/50">
                         <HeartPulse className="h-4 w-4 text-brand-red" />
                         <div className="min-w-0 flex-1"><p className="text-sm font-semibold">{i.diagnosis ?? i.injury_type} – {i.body_region} {i.body_side && `(${i.body_side})`}</p><p className="text-xs text-neutral-500">{i.injury_code} · {formatDate(i.injury_date)} · {daysLost(i)} days</p></div>
                         <StatusBadge status={i.status} />
@@ -170,7 +173,7 @@ export default function PlayerProfilePage() {
             <Card title="Medical Examinations" actions={caps.editMedical && <Button size="sm" icon={<Plus className="h-4 w-4" />} onClick={() => navigate(`/examinations/new?player=${p.id}`)}>New Examination</Button>} padded={false}>
               <div className="px-5"><Table headers={['Exam ID', 'Date', 'Type', 'Physician', 'Clearance', 'Follow-up']} empty={!m.exams.length}>
                 {m.exams.map((e) => (
-                  <tr key={e.id} className="cursor-pointer hover:bg-brand-beigeLight/40" onClick={() => navigate(`/examinations/${e.id}`)}>
+                  <tr key={e.id} className="cursor-pointer hover:bg-brand-cream/40" onClick={() => navigate(`/examinations/${e.id}`)}>
                     <Td className="font-mono text-xs">{e.exam_code}</Td><Td>{formatDate(e.examination_date)}</Td><Td>{e.examination_type}</Td><Td>{e.physician_name}</Td>
                     <Td><StatusBadge status={e.clearance_status ?? 'Pending'} /></Td><Td>{formatDate(e.follow_up_date)}</Td>
                   </tr>
@@ -182,7 +185,7 @@ export default function PlayerProfilePage() {
             <Card title="Injury Record" actions={caps.editMedical && <Button size="sm" icon={<Plus className="h-4 w-4" />} onClick={() => navigate(`/injuries/new?player=${p.id}`)}>Record Injury</Button>} padded={false}>
               <div className="px-5"><Table headers={['Injury ID', 'Date', 'Region', 'Type / Diagnosis', 'Severity', 'Status', 'Days Lost']} empty={!m.injuries.length}>
                 {m.injuries.map((i) => (
-                  <tr key={i.id} className="cursor-pointer hover:bg-brand-beigeLight/40" onClick={() => navigate(`/injuries/${i.id}`)}>
+                  <tr key={i.id} className="cursor-pointer hover:bg-brand-cream/40" onClick={() => navigate(`/injuries/${i.id}`)}>
                     <Td className="font-mono text-xs">{i.injury_code}</Td><Td>{formatDate(i.injury_date)}</Td><Td>{i.body_region} {i.body_side && <span className="text-neutral-400">({i.body_side})</span>}</Td>
                     <Td>{i.injury_type}{i.diagnosis && <span className="block text-xs text-neutral-500">{i.diagnosis}</span>}</Td><Td><StatusBadge status={i.severity} /></Td><Td><StatusBadge status={i.status} /></Td><Td>{daysLost(i)}</Td>
                   </tr>
@@ -197,7 +200,7 @@ export default function PlayerProfilePage() {
                   const inj = m.injuries.find((i) => i.id === t.injury_id);
                   return (
                     <tr key={t.id}>
-                      <Td>{formatDate(t.treatment_date)}</Td><Td><Link className="text-brand-orange" to={`/injuries/${t.injury_id}`}>{inj?.injury_code}</Link></Td>
+                      <Td>{formatDate(t.treatment_date)}</Td><Td><Link className="text-brand-gold" to={`/injuries/${t.injury_id}`}>{inj?.injury_code}</Link></Td>
                       <Td><Badge color="beige">{t.treatment_type}</Badge></Td><Td>{t.details}</Td><Td>{[t.medication_name, t.dosage].filter(Boolean).join(' – ') || '—'}</Td><Td>{t.provided_by}</Td>
                     </tr>
                   );
@@ -209,7 +212,7 @@ export default function PlayerProfilePage() {
             <Card title="Rehabilitation Programmes" padded={false}>
               <div className="px-5"><Table headers={['Programme', 'Injury', 'Start', 'Current Phase', 'Sessions', 'Status']} empty={!m.rehab.length}>
                 {m.rehab.map((r) => (
-                  <tr key={r.id} className="cursor-pointer hover:bg-brand-beigeLight/40" onClick={() => navigate(`/rehabilitation/${r.id}`)}>
+                  <tr key={r.id} className="cursor-pointer hover:bg-brand-cream/40" onClick={() => navigate(`/rehabilitation/${r.id}`)}>
                     <Td className="font-mono text-xs">{r.program_code}</Td><Td>{r.injuries?.injury_code} – {r.injuries?.diagnosis ?? r.injuries?.injury_type}</Td><Td>{formatDate(r.start_date)}</Td>
                     <Td><Badge color="orange">{r.current_phase}</Badge></Td><Td>{m.sessions.filter((s) => s.program_id === r.id).length}</Td><Td><StatusBadge status={r.status} /></Td>
                   </tr>
@@ -276,7 +279,7 @@ function HistoryTab({ playerId, histories, onSaved }: { playerId: string; histor
       </Card>
       <Card title="Version History" padded={false}>
         {histories.length ? histories.map((h) => (
-          <button key={h.id} onClick={() => setViewVersion(h)} className="flex w-full items-center gap-3 border-b border-neutral-100 px-5 py-3 text-left last:border-0 hover:bg-brand-beigeLight/50">
+          <button key={h.id} onClick={() => setViewVersion(h)} className="flex w-full items-center gap-3 border-b border-neutral-100 px-5 py-3 text-left last:border-0 hover:bg-brand-cream/50">
             <History className="h-4 w-4 text-neutral-400" />
             <div className="min-w-0 flex-1"><p className="text-sm font-semibold">Version {h.version} {h.is_current && <Badge color="green">Current</Badge>}</p><p className="truncate text-xs text-neutral-500">{h.change_reason}</p></div>
             <span className="text-xs text-neutral-400">{formatDateTime(h.created_at)}</span>
@@ -322,7 +325,7 @@ function ClearanceTab({ playerId, clearances, rtp, onSaved, pdfRun }: { playerId
       <Modal open={open} onClose={() => setOpen(false)} title="Issue Medical Clearance Decision" size="lg"
         footer={<><Button variant="secondary" onClick={() => setOpen(false)}>Cancel</Button><Button loading={saving} onClick={save}>Sign & Record Decision</Button></>}>
         <div className="space-y-4">
-          <p className="rounded-lg bg-brand-beigeLight p-3 text-xs text-neutral-700">Clearance is never generated automatically. This decision is recorded permanently under your name and cannot be edited – a new decision supersedes it.</p>
+          <p className="rounded-lg bg-brand-cream p-3 text-xs text-neutral-700">Clearance is never generated automatically. This decision is recorded permanently under your name and cannot be edited – a new decision supersedes it.</p>
           <Field label="Clearance decision" required><Select value={form.clearance_status} onChange={(e) => setForm({ ...form, clearance_status: e.target.value })} options={EXAM_CLEARANCE} placeholder="Select…" /></Field>
           <Field label="Restrictions / conditions"><Textarea value={form.restrictions} onChange={(e) => setForm({ ...form, restrictions: e.target.value })} /></Field>
           <Grid>

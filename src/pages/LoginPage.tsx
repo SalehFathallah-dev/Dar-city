@@ -28,21 +28,19 @@ export default function LoginPage() {
 
   return (
     <div className="flex min-h-screen flex-col lg:flex-row">
-      <div className="relative flex flex-col items-center justify-center overflow-hidden bg-brand-black px-8 py-12 text-center lg:w-1/2">
-        <div className="pointer-events-none absolute -right-24 -top-24 h-96 w-96 rounded-full bg-brand-orange/10 blur-3xl" />
-        <div className="pointer-events-none absolute -bottom-32 -left-20 h-96 w-96 rounded-full bg-brand-red/10 blur-3xl" />
-        <Logo size={190} className="relative drop-shadow-2xl" />
-        <h1 className="relative mt-6 font-display text-4xl font-extrabold uppercase tracking-wide text-white">{APP.team}</h1>
-        <p className="relative mt-1 text-sm font-semibold uppercase tracking-[0.25em] text-brand-beige">Team Medical Management System</p>
-        <div className="relative mt-6 h-1 w-24 rounded bg-gradient-to-r from-brand-orange to-brand-red" />
-        <p className="relative mt-6 text-sm text-neutral-400">Team Physician: <span className="font-semibold text-white">{APP.physician}</span></p>
-        <p className="relative text-xs text-neutral-500">Tanzania</p>
+      <div className="relative flex flex-col items-center justify-center overflow-hidden bg-brand-cream px-8 py-12 text-center lg:w-[55%]">
+        <div className="pointer-events-none absolute -left-24 -top-24 h-96 w-96 rounded-full bg-brand-goldLight/25 blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-32 -right-20 h-96 w-96 rounded-full bg-brand-navy/10 blur-3xl" />
+        <Logo size={170} className="relative w-full max-w-xl" />
+        <div className="relative mt-8 h-px w-40 bg-gradient-to-r from-transparent via-brand-gold to-transparent" />
+        <p className="relative mt-5 text-xs font-bold uppercase tracking-[0.3em] text-brand-navy">{APP.product}</p>
+        <p className="relative mt-2 max-w-md text-sm text-neutral-500">Secure medical records, injury management and return-to-play decisions for every club under care.</p>
       </div>
-      <div className="flex flex-1 items-center justify-center bg-[#F6F5F2] px-6 py-12">
-        <form onSubmit={submit} className="w-full max-w-sm animate-fade-in">
+      <div className="flex flex-1 items-center justify-center bg-brand-navy px-6 py-12">
+        <form onSubmit={submit} className="w-full max-w-sm animate-fade-in [&_label>span]:!text-brand-goldLight">
           <div className="mb-8">
-            <h2 className="font-display text-3xl font-bold uppercase tracking-wide text-brand-black">{mode === 'login' ? 'Secure Sign In' : 'Reset Password'}</h2>
-            <p className="mt-1 text-sm text-neutral-500">{mode === 'login' ? 'Authorised medical and team staff only.' : 'We will e-mail you a secure reset link.'}</p>
+            <h2 className="font-display text-3xl font-bold uppercase tracking-wide text-white">{mode === 'login' ? 'Secure Sign In' : 'Reset Password'}</h2>
+            <p className="mt-1 text-sm text-neutral-300">{mode === 'login' ? 'Authorised medical and team staff only.' : 'We will e-mail you a secure reset link.'}</p>
           </div>
           <div className="space-y-4">
             <Field label="E-mail address">
@@ -61,7 +59,7 @@ export default function LoginPage() {
             )}
             {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-brand-red" role="alert">{error}</p>}
             <Button type="submit" size="lg" loading={loading} className="w-full">{mode === 'login' ? 'Sign In' : 'Send Reset Link'}</Button>
-            <button type="button" onClick={() => { setMode(mode === 'login' ? 'reset' : 'login'); setError(null); }} className="w-full text-center text-sm font-medium text-neutral-500 hover:text-brand-orange">
+            <button type="button" onClick={() => { setMode(mode === 'login' ? 'reset' : 'login'); setError(null); }} className="w-full text-center text-sm font-medium text-neutral-300 hover:text-brand-goldLight">
               {mode === 'login' ? 'Forgot your password?' : 'Back to sign in'}
             </button>
           </div>

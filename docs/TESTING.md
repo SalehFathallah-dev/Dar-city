@@ -5,7 +5,7 @@
 | Command | What it covers |
 |---|---|
 | `npm test` | Date format DD/MM/YYYY, age, BMI, days-lost, date ranges, monthly trend, dashboard statistics, incidence (never invented), CSV quoting/BOM/formula injection |
-| `npm run test:db` | Creates a throw-away PostgreSQL cluster, applies all migrations, loads DEMO data and runs 14 test groups (below), then verifies DEMO removal |
+| `npm run test:db` | **A**: loads pre-upgrade single-club data, runs the multi-club migration (row counts must match), then all RLS and club-isolation tests. **B**: migration → rollback (all records kept) → re-apply. **C**: fresh install + DEMO data (2 clubs) + DEMO removal |
 | `npm run build` | Strict TypeScript type-check + production build |
 
 `test:db` verifies: profile auto-creation (inactive), physician full access, player ID & BMI generation, **duplicate jersey prevention**, jersey reuse after archiving,
@@ -13,9 +13,20 @@ medical-history versioning, unsigned clearance rejected, pain score range, RTP/i
 assistant cannot edit injuries / issue clearances / edit others' follow-ups, **coach & manager cannot read any clinical table**, emergency contacts hidden from coach,
 inactive user sees nothing and cannot self-escalate, admin manages users without clinical access, anonymous access denied, storage policies, audit logging.
 
-A browser smoke test (Playwright, 45 checks: every route on desktop, physician workflows, PDF/CSV output, coach restrictions, mobile layout) was also run during development against a mocked API.
+Club isolation tests: existing records all on Dar City with original IDs, club creation (incl. creator access), per-club Player IDs and jersey numbers,
+forged `club_id` ignored, records cannot be moved between clubs, seasons cannot cross clubs, Dar City staff cannot see any Club B row, file,
+season or availability (nor call the RPC for it), a Club B user cannot see or write Dar City data, the physician overview spans both clubs,
+audit entries are club-tagged, brand settings editable by the physician only, inactive clubs block registrations, coaches cannot create clubs.
+
+A browser smoke test (Playwright, 62 checks – including club switching, isolation, dual-logo PDFs, combined vs single-club CSV, club registration: every route on desktop, physician workflows, PDF/CSV output, coach restrictions, mobile layout) was also run during development against a mocked API.
 
 ## Manual checklist (run on your Supabase project before go-live)
+
+- [ ] After migration 4: Dar City shows all previous players, injuries, examinations and reports unchanged
+- [ ] Medical brand logo on login, sidebar, header, dashboard and every PDF; Dar City logo appears as the club logo
+- [ ] Register a second club with its own logo; switch to it – empty roster, own Player IDs, own dashboard
+- [ ] A coach assigned only to club B cannot see club A at all
+- [ ] Every PDF shows both logos, clearly separated; CSV exports carry Club ID / Club Name
 
 - [ ] Physician can sign in; a new dashboard user without a role sees "Access pending approval"
 - [ ] Register a player – Player ID generated, age & BMI shown

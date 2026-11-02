@@ -31,7 +31,7 @@ export default function RtpPage() {
         {data.loading ? <Spinner /> : data.error ? <ErrorBlock message={data.error} onRetry={data.reload} /> : (
           <Table headers={['Ref', 'Decision date', 'Player', 'Injury', 'Pain', 'Decision', 'Physician']} empty={!rows.length}>
             {rows.map((r) => (
-              <tr key={r.id} className="cursor-pointer hover:bg-brand-beigeLight/40" onClick={() => navigate(`/return-to-play/${r.id}`)}>
+              <tr key={r.id} className="cursor-pointer hover:bg-brand-cream/40" onClick={() => navigate(`/return-to-play/${r.id}`)}>
                 <Td className="font-mono text-xs">{r.rtp_code} <DemoBadge show={r.is_demo} /></Td><Td>{formatDate(r.decision_date)}</Td>
                 <Td className="font-semibold">{r.players?.full_name}</Td><Td>{r.injuries?.injury_code}<span className="block text-xs text-neutral-500">{r.injuries?.diagnosis ?? r.injuries?.injury_type}</span></Td>
                 <Td>{r.pain_score ?? '—'}/10</Td><Td><StatusBadge status={r.decision} /></Td><Td>{r.physician_name}</Td>

@@ -3,6 +3,9 @@ import { Navigate, Route, Routes } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ToastProvider } from './context/ToastContext';
 import { ReferenceProvider } from './context/ReferenceContext';
+import { ClubProvider, useClub } from './context/ClubContext';
+import { BrandProvider } from './context/BrandContext';
+import NoClubPage from './pages/clubs/NoClubPage';
 import { AppLayout } from './components/layout/AppLayout';
 import { Spinner } from './components/ui';
 import { isSupabaseConfigured } from './lib/supabase';
@@ -35,6 +38,10 @@ const AnalyticsPage = lazy(() => import('./pages/AnalyticsPage'));
 const AdminPage = lazy(() => import('./pages/AdminPage'));
 const AuditPage = lazy(() => import('./pages/AuditPage'));
 const ResetPasswordPage = lazy(() => import('./pages/ResetPasswordPage'));
+const OverviewPage = lazy(() => import('./pages/OverviewPage'));
+const ClubsPage = lazy(() => import('./pages/clubs/ClubsPage'));
+const ClubFormPage = lazy(() => import('./pages/clubs/ClubFormPage'));
+const ClubProfilePage = lazy(() => import('./pages/clubs/ClubProfilePage'));
 
 function Guard({ need, children }: { need?: (c: Capabilities) => boolean; children: ReactNode }) {
   const { caps } = useAuth();
@@ -44,7 +51,7 @@ function Guard({ need, children }: { need?: (c: Capabilities) => boolean; childr
 
 function Shell() {
   const { session, profile, loading } = useAuth();
-  if (loading) return <div className="flex min-h-screen items-center justify-center bg-brand-charcoal"><Spinner label="Loading secure session…" /></div>;
+  if (loading) return <div className="flex min-h-screen items-center justify-center bg-brand-navy"><Spinner label="Loading secure session…" /></div>;
   if (!session) {
     return (
       <Routes>
@@ -54,14 +61,33 @@ function Shell() {
     );
   }
   if (!profile?.is_active || !profile.role) return <PendingAccess />;
+  return (
+    <BrandProvider>
+      <ClubProvider>
+        <ClubScopedApp />
+      </ClubProvider>
+    </BrandProvider>
+  );
+}
+
+function ClubScopedApp() {
+  const { clubId, loading, clubs } = useClub();
+  if (loading) return <div className="flex min-h-screen items-center justify-center bg-brand-cream"><Spinner label="Loading clubs…" /></div>;
+  if (!clubId) return <NoClubPage hasClubs={clubs.length > 0} />;
   const medical = (c: Capabilities) => c.viewMedical;
   const physician = (c: Capabilities) => c.editMedical;
   return (
-    <ReferenceProvider>
+    // Keyed by club: switching club resets every page and all club-scoped data.
+    <ReferenceProvider key={clubId}>
       <Suspense fallback={<Spinner />}>
         <Routes>
           <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route element={<AppLayout />}>
+            <Route path="overview" element={<Guard need={(c) => c.viewOverview}><OverviewPage /></Guard>} />
+            <Route path="clubs" element={<ClubsPage />} />
+            <Route path="clubs/new" element={<Guard need={(c) => c.manageClubs}><ClubFormPage /></Guard>} />
+            <Route path="clubs/:id" element={<ClubProfilePage />} />
+            <Route path="clubs/:id/edit" element={<Guard need={(c) => c.manageClubs}><ClubFormPage /></Guard>} />
             <Route index element={<Dashboard />} />
             <Route path="players" element={<PlayersPage />} />
             <Route path="players/new" element={<Guard need={(c) => c.managePlayers}><PlayerFormPage /></Guard>} />

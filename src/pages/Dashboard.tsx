@@ -7,28 +7,39 @@ import * as api from '../lib/api';
 import { useAsync } from '../hooks/useAsync';
 import { useAuth } from '../context/AuthContext';
 import { useReference } from '../context/ReferenceContext';
+import { useClub } from '../context/ClubContext';
+import { BrandLogo, ClubLogo } from '../components/Branding';
 import { APP, AVAILABILITY } from '../lib/constants';
 import { computeDashboardStats, countBy, daysLost, inRange, injuryAnalytics, isOpenInjury, monthlyTrend } from '../lib/analytics';
 import { formatDate, todayISO } from '../lib/format';
-import { Badge, Card, EmptyState, ErrorBlock, Logo, PlayerAvatar, Spinner, StatCard, StatusBadge } from '../components/ui';
+import { Badge, Card, EmptyState, ErrorBlock, PlayerAvatar, Spinner, StatCard, StatusBadge } from '../components/ui';
 import { DateRangeFilter, useDateRange } from '../components/DateRangeFilter';
 import { DonutChart, HBarChart, TrendChart, VBarChart } from '../components/charts';
 
 export default function Dashboard() {
   const { caps, profile } = useAuth();
+  const { club } = useClub();
   return (
     <div className="space-y-6">
-      <div className="relative overflow-hidden rounded-3xl bg-brand-black px-6 py-6 text-white shadow-xl sm:px-8">
-        <div className="pointer-events-none absolute -right-10 -top-16 h-64 w-64 rounded-full bg-brand-orange/20 blur-3xl" />
-        <div className="relative flex flex-col gap-4 sm:flex-row sm:items-center">
-          <Logo size={86} />
-          <div className="flex-1">
-            <p className="text-xs font-semibold uppercase tracking-[0.25em] text-brand-beige">{APP.team}</p>
-            <h1 className="font-display text-3xl font-extrabold uppercase tracking-wide sm:text-4xl">Team Medical Management System</h1>
-            <p className="mt-1 text-sm text-neutral-300">Team Physician: <span className="font-semibold text-white">{APP.physician}</span> · Signed in as {profile?.full_name}</p>
+      <div className="overflow-hidden rounded-3xl bg-white shadow-xl ring-1 ring-black/5">
+        <div className="flex flex-col gap-4 bg-brand-cream px-6 py-5 sm:flex-row sm:items-center sm:px-8">
+          <BrandLogo height={72} />
+          <div className="sm:ml-auto sm:text-right">
+            <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-brand-gold">{APP.product}</p>
+            <p className="text-sm text-neutral-600">Signed in as <b className="text-brand-navy">{profile?.full_name}</b> · {formatDate(todayISO())}</p>
           </div>
-          <div className="text-right text-sm text-neutral-400">{formatDate(todayISO())}</div>
         </div>
+        {club && (
+          <div className="relative flex items-center gap-4 bg-brand-navy px-6 py-4 text-white sm:px-8">
+            <div className="pointer-events-none absolute -right-10 -top-16 h-48 w-48 rounded-full bg-brand-gold/20 blur-3xl" />
+            <ClubLogo logo={club.logo_url} name={club.short_name} size={56} />
+            <div className="relative min-w-0">
+              <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-brand-goldLight">Club medical dashboard – data shown for this club only</p>
+              <h1 className="truncate font-display text-2xl font-bold uppercase tracking-wide sm:text-3xl">{club.name}</h1>
+              <p className="text-xs text-neutral-300">{[club.country, club.city, club.league, club.current_season && `Season ${club.current_season}`].filter(Boolean).join(' · ')}</p>
+            </div>
+          </div>
+        )}
       </div>
       {caps.viewMedical ? <ClinicalDashboard /> : <StaffDashboard />}
     </div>
@@ -112,16 +123,16 @@ function ClinicalDashboard() {
         <Card title="Injury Types Distribution"><DonutChart data={view.a.byType} /></Card>
         <Card title="Monthly Injury Trends"><TrendChart data={view.trend} /></Card>
         <Card title="Injuries by Playing Position"><VBarChart data={view.positionCounts} colorful /></Card>
-        <Card title="Days Lost Due to Injuries (by region)"><HBarChart data={view.a.daysLostByRegion} unit="Days lost" color="#D91E36" /></Card>
+        <Card title="Days Lost Due to Injuries (by region)"><HBarChart data={view.a.daysLostByRegion} unit="Days lost" color="#C0283A" /></Card>
         <Card title="Player Availability (current)"><DonutChart data={view.availabilityDist} availability /></Card>
         <Card title="Recovery & Return-to-Play Outcomes" className="lg:col-span-2"><VBarChart data={view.a.rtpOutcomes} unit="Decisions" colorful /></Card>
       </div>
 
       <h2 className="font-display text-xl font-bold uppercase tracking-wide">Recent Activity</h2>
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 xl:grid-cols-3">
-        <Card title="Recently Recorded Injuries" actions={<Link to="/injuries" className="text-xs font-semibold text-brand-orange">View all</Link>} padded={false}>
+        <Card title="Recently Recorded Injuries" actions={<Link to="/injuries" className="text-xs font-semibold text-brand-gold">View all</Link>} padded={false}>
           {view.recentInjuries.length ? view.recentInjuries.map((i) => (
-            <Link key={i.id} to={`/injuries/${i.id}`} className="flex items-center gap-3 border-b border-neutral-100 px-5 py-3 last:border-0 hover:bg-brand-beigeLight/50">
+            <Link key={i.id} to={`/injuries/${i.id}`} className="flex items-center gap-3 border-b border-neutral-100 px-5 py-3 last:border-0 hover:bg-brand-cream/50">
               <HeartPulse className="h-4 w-4 shrink-0 text-brand-red" />
               <div className="min-w-0 flex-1"><p className="truncate text-sm font-semibold">{i.players?.full_name}</p><p className="truncate text-xs text-neutral-500">{i.body_region} · {i.diagnosis ?? i.injury_type} · {daysLost(i)} days</p></div>
               <span className="text-xs text-neutral-400">{formatDate(i.injury_date)}</span>
@@ -130,17 +141,17 @@ function ClinicalDashboard() {
         </Card>
         <Card title="Upcoming Medical Follow-ups" padded={false}>
           {view.upcoming.length ? view.upcoming.map((u, idx) => (
-            <Link key={idx} to={u.to} className="flex items-center gap-3 border-b border-neutral-100 px-5 py-3 last:border-0 hover:bg-brand-beigeLight/50">
-              <CalendarClock className="h-4 w-4 shrink-0 text-brand-orange" />
+            <Link key={idx} to={u.to} className="flex items-center gap-3 border-b border-neutral-100 px-5 py-3 last:border-0 hover:bg-brand-cream/50">
+              <CalendarClock className="h-4 w-4 shrink-0 text-brand-gold" />
               <div className="min-w-0 flex-1"><p className="truncate text-sm font-semibold">{u.who}</p><p className="text-xs text-neutral-500">{u.label}</p></div>
               <Badge color={u.date === todayISO() ? 'red' : 'orange'}>{formatDate(u.date)}</Badge>
             </Link>
           )) : <EmptyState title="No follow-ups scheduled" />}
         </Card>
-        <Card title="Recent Medical Examinations" actions={<Link to="/examinations" className="text-xs font-semibold text-brand-orange">View all</Link>} padded={false}>
+        <Card title="Recent Medical Examinations" actions={<Link to="/examinations" className="text-xs font-semibold text-brand-gold">View all</Link>} padded={false}>
           {view.recentExams.length ? view.recentExams.map((e) => (
-            <Link key={e.id} to={`/examinations/${e.id}`} className="flex items-center gap-3 border-b border-neutral-100 px-5 py-3 last:border-0 hover:bg-brand-beigeLight/50">
-              <Stethoscope className="h-4 w-4 shrink-0 text-brand-charcoal" />
+            <Link key={e.id} to={`/examinations/${e.id}`} className="flex items-center gap-3 border-b border-neutral-100 px-5 py-3 last:border-0 hover:bg-brand-cream/50">
+              <Stethoscope className="h-4 w-4 shrink-0 text-brand-navy" />
               <div className="min-w-0 flex-1"><p className="truncate text-sm font-semibold">{e.players?.full_name}</p><p className="text-xs text-neutral-500">{e.examination_type} · {e.exam_code}</p></div>
               <span className="text-xs text-neutral-400">{formatDate(e.examination_date)}</span>
             </Link>
@@ -148,15 +159,15 @@ function ClinicalDashboard() {
         </Card>
         <Card title="Recent Clearance Decisions" padded={false}>
           {view.recentClearances.length ? view.recentClearances.map((c) => (
-            <Link key={c.id} to={c.to} className="flex items-center gap-3 border-b border-neutral-100 px-5 py-3 last:border-0 hover:bg-brand-beigeLight/50">
+            <Link key={c.id} to={c.to} className="flex items-center gap-3 border-b border-neutral-100 px-5 py-3 last:border-0 hover:bg-brand-cream/50">
               <div className="min-w-0 flex-1"><p className="truncate text-sm font-semibold">{c.who}</p><p className="text-xs text-neutral-500">{formatDate(c.date)}</p></div>
               <StatusBadge status={c.decision} />
             </Link>
           )) : <EmptyState title="No decisions in this period" />}
         </Card>
-        <Card title="Recently Registered Players" actions={<Link to="/players" className="text-xs font-semibold text-brand-orange">View all</Link>} padded={false}>
+        <Card title="Recently Registered Players" actions={<Link to="/players" className="text-xs font-semibold text-brand-gold">View all</Link>} padded={false}>
           {view.recentPlayers.length ? view.recentPlayers.map((p) => (
-            <Link key={p.id} to={`/players/${p.id}`} className="flex items-center gap-3 border-b border-neutral-100 px-5 py-3 last:border-0 hover:bg-brand-beigeLight/50">
+            <Link key={p.id} to={`/players/${p.id}`} className="flex items-center gap-3 border-b border-neutral-100 px-5 py-3 last:border-0 hover:bg-brand-cream/50">
               <PlayerAvatar name={p.full_name} photoPath={p.photo_path} size={32} />
               <div className="min-w-0 flex-1"><p className="truncate text-sm font-semibold">{p.full_name}</p><p className="text-xs text-neutral-500">#{p.jersey_number ?? '–'} · {p.position}</p></div>
               <span className="text-xs text-neutral-400">{formatDate(p.registration_date)}</span>
@@ -186,10 +197,10 @@ function StaffDashboard() {
       </div>
       <div className="grid gap-4 lg:grid-cols-3">
         <Card title="Availability Overview"><DonutChart data={AVAILABILITY.map((s) => ({ name: s, value: c(s) })).filter((x) => x.value)} availability /></Card>
-        <Card title="Players with Training Restrictions" className="lg:col-span-2" actions={<Link to="/availability" className="text-xs font-semibold text-brand-orange">Full availability</Link>} padded={false}>
+        <Card title="Players with Training Restrictions" className="lg:col-span-2" actions={<Link to="/availability" className="text-xs font-semibold text-brand-gold">Full availability</Link>} padded={false}>
           {rows.filter((r) => r.availability !== 'FULLY AVAILABLE').length ? rows.filter((r) => r.availability !== 'FULLY AVAILABLE').map((r) => (
             <div key={r.player_id} className="flex flex-wrap items-center gap-3 border-b border-neutral-100 px-5 py-3 last:border-0">
-              <span className="w-8 font-display text-lg font-bold text-brand-orange">#{r.jersey_number ?? '–'}</span>
+              <span className="w-8 font-display text-lg font-bold text-brand-gold">#{r.jersey_number ?? '–'}</span>
               <div className="min-w-0 flex-1"><p className="text-sm font-semibold">{r.full_name}</p><p className="text-xs text-neutral-500">{r.restrictions || 'No specific restrictions recorded'}</p></div>
               <StatusBadge status={r.availability} />
             </div>

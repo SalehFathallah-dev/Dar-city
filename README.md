@@ -1,11 +1,14 @@
-# DAR CITY – Team Medical Management System
+# DR. FARAJ LASHIKA – ORTHOPEDIC & SPORTS MEDICINE
 
-**Dar City Basketball Team – Tanzania · Sports Medicine Department**
-Official Team Physician: **Dr. Faraj Lashika**
+**Multi-Club Sports Medical Management System**
 
-A production-ready sports medicine web application (installable PWA) for managing player medical records,
-pre-season examinations, injuries, follow-ups, rehabilitation, return-to-play decisions, medical clearance,
-daily availability, PDF reports, CSV exports and medical analytics.
+A production-ready sports medicine web application (installable PWA) for managing the medical records of
+**multiple clubs**: player registration, examinations, injuries, follow-ups, rehabilitation, return-to-play,
+medical clearance, daily availability, dual-branded PDF reports, CSV exports and analytics.
+
+- **Medical brand** (primary identity): Dr. Faraj Lashika – Orthopedic & Sports Medicine.
+- **Club identity**: each club has its own logo, roster, Player IDs, seasons and medical records.
+  Dar City Basketball Team – Tanzania is the first club; all its existing records were migrated unchanged.
 
 | Layer | Technology |
 |---|---|
@@ -34,7 +37,8 @@ Without Supabase credentials the app shows a setup screen – it never pretends 
 
 ```
 supabase/
-  migrations/      SQL schema, RLS security, storage buckets (run in order)
+  migrations/      SQL schema, RLS security, storage buckets, multi-club upgrade (run in order)
+  rollback/        Reversal script for the multi-club migration
   seed/            DEMO data (clearly labelled), demo removal, initial users
   functions/       admin-users Edge Function (server-side user creation)
   tests/           Database / RLS test suite (npm run test:db)
@@ -53,4 +57,4 @@ public/            Official logo and PWA icons
 | `npm run dev` | Development server |
 | `npm run build` | Type-check and production build (`dist/`) |
 | `npm test` | Unit tests (analytics, dates, BMI, CSV) |
-| `npm run test:db` | Runs all migrations + demo seed + 14 RLS/business-rule test groups on a throw-away local PostgreSQL |
+| `npm run test:db` | Migrates single-club data to multi-club (verifying every record), runs RLS + club-isolation tests, tests the rollback, then a fresh install with DEMO data |

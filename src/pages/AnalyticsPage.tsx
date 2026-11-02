@@ -79,11 +79,11 @@ export default function AnalyticsPage() {
       <div className="grid gap-4 lg:grid-cols-2">
         <Card title="Injuries by Body Region"><HBarChart data={a.byRegion} /></Card>
         <Card title="Injuries by Playing Position"><VBarChart data={a.byPosition} colorful /></Card>
-        <Card title="Injuries by Mechanism"><HBarChart data={a.byMechanism} color="#242424" /></Card>
+        <Card title="Injuries by Mechanism"><HBarChart data={a.byMechanism} color="#142347" /></Card>
         <Card title="Monthly Injury Trend"><TrendChart data={view.trend} /></Card>
         <Card title="Contact vs Non-Contact"><DonutChart data={a.contact} /></Card>
         <Card title="Match vs Training"><DonutChart data={a.setting} /></Card>
-        <Card title="Days Lost by Body Region"><HBarChart data={a.daysLostByRegion} unit="Days lost" color="#D91E36" /></Card>
+        <Card title="Days Lost by Body Region"><HBarChart data={a.daysLostByRegion} unit="Days lost" color="#C0283A" /></Card>
         <Card title="Return-to-Play Outcomes"><VBarChart data={a.rtpOutcomes} unit="Decisions" colorful /></Card>
       </div>
 

@@ -1,18 +1,16 @@
 export const APP = {
-  name: 'DAR CITY – TEAM MEDICAL MANAGEMENT SYSTEM',
-  team: 'DAR CITY BASKETBALL TEAM',
-  organization: 'DAR CITY BASKETBALL TEAM – TANZANIA',
-  department: 'SPORTS MEDICINE DEPARTMENT',
-  system: 'MEDICAL MANAGEMENT SYSTEM',
+  name: 'DR. FARAJ LASHIKA – ORTHOPEDIC & SPORTS MEDICINE',
+  product: 'Multi-Club Sports Medical Management System',
   physician: 'Dr. Faraj Lashika',
+  specialty: 'Orthopedic & Sports Medicine',
 } as const;
 
 export const BRAND = {
-  black: '#171717',
-  charcoal: '#242424',
-  orange: '#F4511E',
-  red: '#D91E36',
-  beige: '#D8CCAE',
+  navy: '#142347',
+  gold: '#9A7634',
+  goldLight: '#C9A866',
+  cream: '#F7F3EA',
+  red: '#C0283A',
   white: '#FFFFFF',
 } as const;
 

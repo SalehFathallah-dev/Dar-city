@@ -75,11 +75,11 @@ export default function PlayersPage() {
             <div className="hidden md:block">
               <Table headers={['Player', 'ID', 'Position', 'Age', 'Height / Weight', 'BMI', 'Registered', 'Status', '']} empty={!filtered.length}>
                 {filtered.map((p) => (
-                  <tr key={p.id} className="hover:bg-brand-beigeLight/40">
+                  <tr key={p.id} className="hover:bg-brand-cream/40">
                     <Td>
                       <Link to={`/players/${p.id}`} className="flex items-center gap-3">
                         <PlayerAvatar name={p.full_name} photoPath={p.photo_path} size={36} />
-                        <div><p className="font-semibold text-neutral-900 hover:text-brand-orange">{p.full_name}</p><p className="text-xs text-neutral-500">#{p.jersey_number ?? '–'} {p.nationality && `· ${p.nationality}`}</p></div>
+                        <div><p className="font-semibold text-neutral-900 hover:text-brand-gold">{p.full_name}</p><p className="text-xs text-neutral-500">#{p.jersey_number ?? '–'} {p.nationality && `· ${p.nationality}`}</p></div>
                         <DemoBadge show={p.is_demo} />
                       </Link>
                     </Td>

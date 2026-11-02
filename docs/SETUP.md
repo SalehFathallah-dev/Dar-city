@@ -13,6 +13,15 @@ Open **SQL Editor** and run these files **in order** (copy/paste each file and c
 1. `supabase/migrations/20261102000001_schema.sql` – tables, constraints, indexes, sequences
 2. `supabase/migrations/20261102000002_security.sql` – role helpers, triggers, audit log, Row Level Security, RPCs
 3. `supabase/migrations/20261102000003_storage.sql` – private `medical-documents` and `player-photos` buckets with policies
+4. `supabase/migrations/20261102000004_multi_club.sql` – **multi-club upgrade**: creates `clubs` and `club_members`, registers
+   Dar City Basketball Team as the first club, adds `club_id` to every operational table, assigns all existing records to Dar City,
+   verifies row counts (the migration aborts if anything does not match), and installs club-aware RLS, storage and RPCs.
+
+### Upgrading an existing installation
+
+If migrations 1–3 are already live with real data, **only run migration 4**. It never drops tables or rewrites record IDs,
+and every existing account keeps access to Dar City. Take a backup first (Database → Backups, or the physician's JSON backup).
+To undo it while only Dar City exists, run `supabase/rollback/20261102000004_multi_club_down.sql` – all records are kept.
 
 Alternatively with the Supabase CLI: `npx supabase link --project-ref <ref>` then `npx supabase db push`.
 
@@ -23,7 +32,17 @@ Alternatively with the Supabase CLI: `npx supabase link --project-ref <ref>` the
    - A Super Administrator account (manages users, seasons and settings)
 2. Edit the two e-mail addresses in `supabase/seed/create_initial_users.sql` and run it in the SQL Editor.
    New accounts are **inactive with no role** until this step (or until the administrator approves them in the app).
-3. Sign in to the app as the administrator → **Settings & Users → Seasons** → add the current season (e.g. *2026/2027*) and tick *Current season*.
+3. Sign in → **Settings → Club Settings** → add the current season for each club (e.g. *2026/2027*) and tick *Current season*.
+4. Give staff access to clubs: **Settings → Users & Roles → Manage** (club checkboxes), or from a club's profile → *Grant Access*.
+   A user only ever sees the clubs they are assigned to; the Super Administrator sees all clubs (but no clinical data).
+
+### Adding more clubs
+**Club Management → Add Club** (physician or administrator). Upload the club logo (PNG/JPG/WEBP, or SVG without scripts).
+Player IDs are generated per club from a prefix (e.g. `KILI-0001`). The physician who creates a club automatically gets access.
+
+### Medical brand
+**Settings → Medical Brand** controls the physician name, specialty, contact details, personal logo and optional signature image
+used throughout the app and on every PDF. It is independent of club settings – changing a club logo never changes it.
 
 > Roles are separate by design: the Super Administrator has **no access to clinical records**, and the Team Physician cannot change user roles.
 
@@ -40,8 +59,8 @@ Without it, create users in the dashboard and assign roles in **Settings & Users
 
 ## 4. Optional DEMO data
 
-`supabase/seed/demo_data.sql` inserts 5 fictional players (names start with **DEMO**, every row has `is_demo = true`)
-with examinations, injuries, follow-ups, rehabilitation, RTP decisions and exposure data.
+`supabase/seed/demo_data.sql` inserts 5 fictional Dar City players plus a second fictional club, *DEMO Kilimanjaro Warriors*, with 3 players
+(names start with **DEMO**, every row has `is_demo = true`), with examinations, injuries, follow-ups, rehabilitation, RTP decisions and exposure data.
 **Only run it on a test project, or with explicit confirmation.** Remove it at any time with `supabase/seed/remove_demo_data.sql` (deletes only DEMO rows).
 
 ## 5. Environment variables

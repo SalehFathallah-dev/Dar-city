@@ -2,7 +2,7 @@ import { Logo } from '../components/ui';
 
 export default function SetupRequired() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-brand-black p-6">
+    <div className="flex min-h-screen items-center justify-center bg-brand-ink p-6">
       <div className="max-w-xl rounded-2xl bg-white p-8 shadow-2xl">
         <div className="mb-4 flex items-center gap-4"><Logo size={64} /><h1 className="font-display text-2xl font-bold uppercase">Supabase connection required</h1></div>
         <p className="text-sm text-neutral-700">This application stores all medical records in a secure Supabase database. No connection has been configured yet, so nothing can be saved.</p>

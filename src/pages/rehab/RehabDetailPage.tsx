@@ -33,7 +33,7 @@ export default function RehabDetailPage() {
   return (
     <div className="space-y-4">
       <PageHeader title={`Rehabilitation ${p.program_code}`} icon={<Footprints className="h-6 w-6" />}
-        subtitle={<><Link className="font-semibold text-brand-orange" to={`/players/${p.player_id}`}>{p.players?.full_name}</Link> · <Link className="text-brand-orange" to={`/injuries/${p.injury_id}`}>{p.injuries?.injury_code}</Link> {p.injuries?.diagnosis ?? p.injuries?.injury_type} <DemoBadge show={p.is_demo} /></>}
+        subtitle={<><Link className="font-semibold text-brand-gold" to={`/players/${p.player_id}`}>{p.players?.full_name}</Link> · <Link className="text-brand-gold" to={`/injuries/${p.injury_id}`}>{p.injuries?.injury_code}</Link> {p.injuries?.diagnosis ?? p.injuries?.injury_type} <DemoBadge show={p.is_demo} /></>}
         actions={<>
           {caps.addFollowups && p.status === 'Active' && <Button icon={<Plus className="h-4 w-4" />} onClick={() => setSessionOpen(true)}>Add Session</Button>}
           {caps.editMedical && <Button variant="secondary" icon={<Pencil className="h-4 w-4" />} onClick={() => setEditOpen(true)}>Edit Programme</Button>}
@@ -44,7 +44,7 @@ export default function RehabDetailPage() {
         <ol className="grid grid-cols-1 gap-2 sm:grid-cols-7">
           {REHAB_PHASES.map((ph, idx) => (
             <li key={ph} className={clsx('rounded-xl border p-3 text-center text-xs font-semibold',
-              idx < phaseIdx ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : idx === phaseIdx ? 'border-brand-orange bg-brand-orange text-white shadow-md' : 'border-neutral-200 text-neutral-400')}>
+              idx < phaseIdx ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : idx === phaseIdx ? 'border-brand-gold bg-brand-gold text-white shadow-md' : 'border-neutral-200 text-neutral-400')}>
               <span className="block font-display text-lg">{idx + 1}</span>{ph}
               {idx < phaseIdx && <CheckCircle2 className="mx-auto mt-1 h-4 w-4" />}
             </li>
@@ -63,7 +63,7 @@ export default function RehabDetailPage() {
         <Card title="Pain Trend">
           {chart.length ? (
             <ResponsiveContainer width="100%" height={200}>
-              <LineChart data={chart} margin={{ left: -20, right: 10, top: 10 }}><CartesianGrid stroke="#eee" vertical={false} /><XAxis dataKey="date" tick={{ fontSize: 11 }} /><YAxis domain={[0, 10]} tick={{ fontSize: 11 }} /><Tooltip /><Line dataKey="pain" stroke="#F4511E" strokeWidth={3} /></LineChart>
+              <LineChart data={chart} margin={{ left: -20, right: 10, top: 10 }}><CartesianGrid stroke="#eee" vertical={false} /><XAxis dataKey="date" tick={{ fontSize: 11 }} /><YAxis domain={[0, 10]} tick={{ fontSize: 11 }} /><Tooltip /><Line dataKey="pain" stroke="#9A7634" strokeWidth={3} /></LineChart>
             </ResponsiveContainer>
           ) : <EmptyState title="No sessions yet" />}
         </Card>

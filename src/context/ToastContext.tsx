@@ -24,7 +24,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   const styles: Record<Kind, string> = {
     success: 'border-emerald-500 text-emerald-800',
     error: 'border-brand-red text-brand-red',
-    info: 'border-brand-orange text-brand-charcoal',
+    info: 'border-brand-gold text-brand-navy',
   };
   const Icon = { success: CheckCircle2, error: AlertTriangle, info: Info };
   return (

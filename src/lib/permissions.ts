@@ -28,6 +28,9 @@ export function capabilities(role: AppRole | null | undefined) {
     exportMedical: clinical,
     fullBackup: physician,
     viewAnalytics: clinical,
+    manageClubs: physician || admin,
+    viewOverview: clinical,
+    manageBrand: physician || admin,
   };
 }
 export type Capabilities = ReturnType<typeof capabilities>;

@@ -33,7 +33,7 @@ export default function ExaminationDetailPage() {
   return (
     <div className="space-y-4">
       <PageHeader title={`${e.examination_type} Examination`} icon={<Stethoscope className="h-6 w-6" />}
-        subtitle={<><Link className="font-semibold text-brand-orange" to={`/players/${e.player_id}`}>{e.players?.full_name}</Link> · {e.exam_code} · {formatDate(e.examination_date)} <DemoBadge show={e.is_demo} /></>}
+        subtitle={<><Link className="font-semibold text-brand-gold" to={`/players/${e.player_id}`}>{e.players?.full_name}</Link> · {e.exam_code} · {formatDate(e.examination_date)} <DemoBadge show={e.is_demo} /></>}
         actions={<>
           {caps.editMedical && <Button variant="secondary" icon={<Pencil className="h-4 w-4" />} onClick={() => navigate(`/examinations/${e.id}/edit`)}>Edit</Button>}
           {caps.editMedical && <Button variant="ghost" icon={<Archive className="h-4 w-4" />} onClick={() => setConfirm(true)}>Archive</Button>}
@@ -51,7 +51,7 @@ export default function ExaminationDetailPage() {
           <div className="space-y-2">
             <StatusBadge status={e.clearance_status ?? 'Decision pending'} />
             {e.clearance_restrictions && <p className="text-sm">{e.clearance_restrictions}</p>}
-            {e.physician_signature && <p className="pt-2 font-serif text-lg italic text-brand-charcoal">{e.physician_signature}</p>}
+            {e.physician_signature && <p className="pt-2 font-serif text-lg italic text-brand-navy">{e.physician_signature}</p>}
             <p className="text-xs text-neutral-500">{e.physician_name}{e.signed_at && ` · signed ${formatDateTime(e.signed_at)}`}</p>
           </div>
         </Card>

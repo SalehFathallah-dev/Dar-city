@@ -39,7 +39,7 @@ export default function ExaminationsPage() {
         {exams.loading ? <Spinner /> : exams.error ? <ErrorBlock message={exams.error} onRetry={exams.reload} /> : (
           <Table headers={['Exam ID', 'Date', 'Player', 'Type', 'Vitals', 'Clearance', 'Follow-up']} empty={!rows.length}>
             {rows.map((e) => (
-              <tr key={e.id} className="cursor-pointer hover:bg-brand-beigeLight/40" onClick={() => navigate(`/examinations/${e.id}`)}>
+              <tr key={e.id} className="cursor-pointer hover:bg-brand-cream/40" onClick={() => navigate(`/examinations/${e.id}`)}>
                 <Td className="font-mono text-xs">{e.exam_code} <DemoBadge show={e.is_demo} /></Td>
                 <Td>{formatDate(e.examination_date)}</Td>
                 <Td className="font-semibold">{e.players?.full_name}<span className="block text-xs font-normal text-neutral-500">#{e.players?.jersey_number ?? '–'} · {e.players?.position}</span></Td>

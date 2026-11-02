@@ -133,7 +133,7 @@ export default function InjuryFormPage() {
             <div className="grid grid-cols-3 gap-1.5 sm:grid-cols-5 lg:grid-cols-8">
               {BODY_REGIONS.map((r) => (
                 <button type="button" key={r} onClick={() => set('body_region')(r)}
-                  className={clsx('rounded-lg border px-2 py-2 text-xs font-semibold transition', form.body_region === r ? 'border-brand-orange bg-brand-orange text-white' : 'border-neutral-200 bg-white hover:border-brand-orange')}>{r}</button>
+                  className={clsx('rounded-lg border px-2 py-2 text-xs font-semibold transition', form.body_region === r ? 'border-brand-gold bg-brand-gold text-white' : 'border-neutral-200 bg-white hover:border-brand-gold')}>{r}</button>
               ))}
             </div>
           </Field>
@@ -170,9 +170,9 @@ export default function InjuryFormPage() {
               {TREATMENT_TYPES.map((t) => {
                 const cur = treatments[t] ?? { on: false, details: '' };
                 return (
-                  <div key={t} className={clsx('rounded-xl border p-3', cur.on ? 'border-brand-orange bg-orange-50/40' : 'border-neutral-200')}>
+                  <div key={t} className={clsx('rounded-xl border p-3', cur.on ? 'border-brand-gold bg-orange-50/40' : 'border-neutral-200')}>
                     <label className="flex cursor-pointer items-center gap-2 text-sm font-semibold">
-                      <input type="checkbox" className="h-4 w-4 accent-brand-orange" checked={cur.on} onChange={(e) => setTreatments({ ...treatments, [t]: { ...cur, on: e.target.checked } })} /> {t}
+                      <input type="checkbox" className="h-4 w-4 accent-brand-gold" checked={cur.on} onChange={(e) => setTreatments({ ...treatments, [t]: { ...cur, on: e.target.checked } })} /> {t}
                     </label>
                     {cur.on && (
                       <div className="mt-2 space-y-2">

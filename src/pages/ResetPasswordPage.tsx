@@ -22,7 +22,7 @@ export default function ResetPasswordPage() {
     navigate('/');
   };
   return (
-    <div className="flex min-h-screen items-center justify-center bg-brand-black p-6">
+    <div className="flex min-h-screen items-center justify-center bg-brand-ink p-6">
       <div className="w-full max-w-sm rounded-2xl bg-white p-8 shadow-2xl">
         <Logo size={70} className="mx-auto" />
         <h1 className="mt-3 text-center font-display text-2xl font-bold uppercase">Set a new password</h1>

@@ -102,7 +102,7 @@ export default function PlayerFormPage() {
           <div className="mb-5 flex items-center gap-4">
             <PlayerAvatar name={form.full_name || '?'} photoPath={photo ? null : photoPath} size={72} />
             <div>
-              <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-neutral-300 px-3 py-2 text-sm font-semibold hover:border-brand-orange">
+              <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-neutral-300 px-3 py-2 text-sm font-semibold hover:border-brand-gold">
                 <Camera className="h-4 w-4" /> {photo ? photo.name : 'Player Photograph'}
                 <input type="file" accept="image/jpeg,image/png,image/webp" capture="user" className="hidden" onChange={(e) => setPhoto(e.target.files?.[0] ?? null)} />
               </label>

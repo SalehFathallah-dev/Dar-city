@@ -103,7 +103,7 @@ export default function RtpFormPage() {
           </Grid>
         </FormSection>
         <FormSection title="Return-to-Play Decision" icon={<Signature className="h-5 w-5" />}>
-          <p className="mb-4 rounded-lg bg-brand-beigeLight p-3 text-xs text-neutral-700">No decision is generated automatically. Your decision is permanently stored in the RTP history.</p>
+          <p className="mb-4 rounded-lg bg-brand-cream p-3 text-xs text-neutral-700">No decision is generated automatically. Your decision is permanently stored in the RTP history.</p>
           <Grid>
             <Field label="Decision" required error={errors.decision} className="sm:col-span-2"><Select value={f.decision} onChange={set('decision')} options={RTP_DECISIONS} placeholder="Select decision…" error={!!errors.decision} /></Field>
             <Field label="Decision date" required error={errors.decision_date}><Input type="date" value={f.decision_date} onChange={set('decision_date')} error={!!errors.decision_date} /></Field>

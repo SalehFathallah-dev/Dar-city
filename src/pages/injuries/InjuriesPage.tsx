@@ -50,7 +50,7 @@ export default function InjuriesPage() {
         {injuries.loading ? <Spinner /> : injuries.error ? <ErrorBlock message={injuries.error} onRetry={injuries.reload} /> : (
           <Table headers={['Injury ID', 'Date', 'Player', 'Region / Side', 'Type / Diagnosis', 'Setting', 'Severity', 'Status', 'Days lost']} empty={!rows.length}>
             {rows.map((i) => (
-              <tr key={i.id} className="cursor-pointer hover:bg-brand-beigeLight/40" onClick={() => navigate(`/injuries/${i.id}`)}>
+              <tr key={i.id} className="cursor-pointer hover:bg-brand-cream/40" onClick={() => navigate(`/injuries/${i.id}`)}>
                 <Td className="font-mono text-xs">{i.injury_code} <DemoBadge show={i.is_demo} /></Td>
                 <Td>{formatDate(i.injury_date)}</Td>
                 <Td className="font-semibold">{i.players?.full_name}<span className="block text-xs font-normal text-neutral-500">#{i.players?.jersey_number ?? '–'} · {i.players?.position}</span></Td>
@@ -69,7 +69,7 @@ export default function InjuriesPage() {
         {openInjuries.length ? (
           <div className="space-y-2">
             {openInjuries.map((i) => (
-              <button key={i.id} onClick={() => navigate(`/injuries/${i.id}?followup=1`)} className="flex w-full items-center gap-3 rounded-xl border border-neutral-200 p-3 text-left hover:border-brand-orange">
+              <button key={i.id} onClick={() => navigate(`/injuries/${i.id}?followup=1`)} className="flex w-full items-center gap-3 rounded-xl border border-neutral-200 p-3 text-left hover:border-brand-gold">
                 <HeartPulse className="h-5 w-5 text-brand-red" />
                 <div className="flex-1"><p className="font-semibold">{i.players?.full_name}</p><p className="text-xs text-neutral-500">{i.injury_code} · {i.body_region} · {i.diagnosis ?? i.injury_type} · {formatDate(i.injury_date)}</p></div>
                 <StatusBadge status={i.status} />

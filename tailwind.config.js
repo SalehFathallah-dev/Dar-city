@@ -5,14 +5,18 @@ export default {
     extend: {
       colors: {
         brand: {
-          black: '#171717',
-          charcoal: '#242424',
-          charcoal2: '#2E2E2E',
-          orange: '#F4511E',
-          orangeDark: '#D9420F',
-          red: '#D91E36',
-          beige: '#D8CCAE',
-          beigeLight: '#F3EFE4',
+          // Medical brand – Dr. Faraj Lashika (navy & gold)
+          ink: '#0F1A33',
+          navy: '#142347',
+          navy2: '#1E2F58',
+          gold: '#9A7634',
+          goldDark: '#7E5F27',
+          goldLight: '#C9A866',
+          sand: '#D9C9A3',
+          cream: '#F7F3EA',
+          red: '#C0283A',
+          // Dar City club accent (used only for club-specific touches)
+          clubOrange: '#F4511E',
         },
       },
       fontFamily: {

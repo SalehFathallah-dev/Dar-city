@@ -10,10 +10,11 @@ import { AVAILABILITY, MEDICAL_STATUSES } from '../lib/constants';
 import { formatDate, formatDateTime, todayISO } from '../lib/format';
 import { latestByPlayer, isOpenInjury } from '../lib/analytics';
 import type { Availability, Injury } from '../lib/types';
-import { Badge, Button, Card, Checkbox, ErrorBlock, Field, Grid, Input, Logo, Modal, PageHeader, Select, Spinner, StatCard, StatusBadge, Table, Td, Textarea } from '../components/ui';
+import { Badge, Button, Card, Checkbox, ErrorBlock, Field, Grid, Input, Modal, PageHeader, Select, Spinner, StatCard, StatusBadge, Table, Td, Textarea } from '../components/ui';
 import { PlayerPicker } from '../components/PlayerPicker';
 import { useReportPreview } from '../components/PdfPreview';
-import { APP } from '../lib/constants';
+import { useClub } from '../context/ClubContext';
+import { BrandLogo, ClubLogo } from '../components/Branding';
 
 interface Row {
   player_id: string; full_name: string; jersey_number: number | null; position: string; availability: string; medical_status: string;
@@ -25,6 +26,7 @@ export default function AvailabilityPage() {
   const { caps } = useAuth();
   const [params, setParams] = useSearchParams();
   const pdf = useReportPreview();
+  const { club } = useClub();
   const data = useAsync(async () => {
     const team = await api.getTeamAvailability();
     if (!caps.viewMedical) return { rows: team as Row[], history: [] as Availability[], injuries: [] as Injury[] };
@@ -52,7 +54,7 @@ export default function AvailabilityPage() {
           <Button variant="secondary" icon={<FileText className="h-4 w-4" />} loading={pdf.busy} onClick={() => pdf.run(() => reports.availabilityReport())}>Daily Report PDF</Button>
           {caps.updateAvailability && <Button icon={<Pencil className="h-4 w-4" />} onClick={() => setEditing('')}>Update Availability</Button>}
         </>} />
-      <div className="mb-4 hidden items-center gap-4 print:flex"><Logo size={60} /><div><p className="font-display text-xl font-bold">{APP.team}</p><p className="text-sm">Daily Player Availability – {formatDate(todayISO())} – {APP.physician}</p></div></div>
+      <div className="mb-4 hidden items-center gap-4 print:flex"><BrandLogo height={50} /><div className="ml-auto flex items-center gap-3 text-right"><div><p className="font-display text-lg font-bold">{club?.name}</p><p className="text-sm">Daily Player Availability – {formatDate(todayISO())}</p></div><ClubLogo logo={club?.logo_url} name={club?.short_name ?? ''} size={50} /></div></div>
       {data.loading ? <Spinner /> : data.error ? <ErrorBlock message={data.error} onRetry={data.reload} /> : (
         <>
           <div className="no-print mb-4 grid grid-cols-2 gap-3 lg:grid-cols-5">
@@ -62,13 +64,13 @@ export default function AvailabilityPage() {
             ))}
           </div>
           <Card padded>
-            {filter && <p className="no-print mb-3 text-sm">Filtered: <Badge color="orange">{filter}</Badge> <button className="ml-2 text-brand-orange" onClick={() => setFilter('')}>Clear</button></p>}
+            {filter && <p className="no-print mb-3 text-sm">Filtered: <Badge color="orange">{filter}</Badge> <button className="ml-2 text-brand-gold" onClick={() => setFilter('')}>Clear</button></p>}
             <Table headers={['Player', '#', 'Position', 'Medical Status', 'Training Availability', 'Restrictions', 'Last Assessment', 'Next Follow-up', ...(caps.viewMedical ? [''] : [])]} empty={!rows.length}>
               {rows.map((r) => (
                 <tr key={r.player_id}>
                   <Td className="font-semibold">{r.full_name}{r.staff_notes && <span className="block text-xs font-normal text-neutral-500">{r.staff_notes}</span>}
                     {caps.viewMedical && r.internal_notes && <span className="block text-xs font-normal italic text-brand-red">Internal: {r.internal_notes}</span>}</Td>
-                  <Td className="font-display text-lg font-bold text-brand-orange">{r.jersey_number ?? '–'}</Td>
+                  <Td className="font-display text-lg font-bold text-brand-gold">{r.jersey_number ?? '–'}</Td>
                   <Td>{r.position}</Td>
                   <Td>{r.medical_status}</Td>
                   <Td><StatusBadge status={r.availability} />{caps.viewMedical && r.shared === false && <span className="mt-1 flex items-center gap-1 text-[11px] text-neutral-500"><EyeOff className="h-3 w-3" /> Not shared</span>}</Td>

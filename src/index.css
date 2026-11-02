@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 html { -webkit-tap-highlight-color: transparent; }
-body { @apply bg-[#F6F5F2] font-sans text-neutral-900 antialiased; }
+body { @apply bg-[#F6F5F0] font-sans text-neutral-900 antialiased; }
 input[type='date'], input[type='time'] { min-height: 42px; }
 @media print {
   aside, header, nav, .no-print { display: none !important; }

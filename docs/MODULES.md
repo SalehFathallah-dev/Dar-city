@@ -1,5 +1,28 @@
 # Module Documentation
 
+## Branding
+Two separate identities are used everywhere and never replace each other:
+- **A. Medical brand** – Dr. Faraj Lashika, Orthopedic & Sports Medicine (login screen, sidebar, header, dashboards, every PDF header and footer).
+- **B. Club logo** – the selected club (sidebar club section, header, club dashboard, player profiles, the club band of every PDF).
+
+## Multi-club architecture
+- `clubs` holds each club (auto Club ID `CLB-0001`, name, short name, logo, country, city, sport, category, league, season, contacts, notes, status).
+- `club_members` assigns staff accounts to clubs. Users see only their clubs; Super Administrators see all clubs.
+- Every operational table has a mandatory `club_id`. Child records (follow-ups, treatments, sessions, findings, documents…) **inherit**
+  `club_id` from their parent in the database, so it cannot be forged or changed through the API. Players, seasons and exposure
+  records cannot be moved to another club after creation.
+- Player IDs and jersey-number uniqueness are per club. The same person may be registered in two clubs only as two explicit registrations.
+- Deactivated clubs keep all records (read-only for new registrations).
+
+### Club switcher
+Sidebar (desktop) and header (mobile) show the current club with its logo. Switching club resets every page and applies the
+new club to every query. Detail pages of the previous club return to the matching list.
+
+### Dashboards
+- **All Clubs Overview** – totals across authorised clubs (clubs, players, active, injuries, currently injured, rehabilitation,
+  available, examinations) plus a club comparison chart and table.
+- **Club dashboard** – statistics for the selected club only.
+
 ## Roles & permissions (enforced by PostgreSQL Row Level Security)
 
 | Capability | Team Physician | Assistant Medical Staff | Team Manager | Head Coach | Super Admin |
@@ -11,7 +34,9 @@
 | Approved availability & restrictions | ✏️ | 👁 (+ internal notes) | 👁 | 👁 | 👁 |
 | Analytics, medical exports | ✅ | ✅ | – | – | – |
 | Full backup | ✅ | – | – | – | – |
-| Users, settings | – | – | – | – | ✅ |
+| Users, application settings | – | – | – | – | ✅ |
+| Add/edit clubs, club logos, club user access | ✅ (own clubs) | – | – | – | ✅ |
+| Medical brand settings | ✅ | – | – | – | ✅ |
 | Seasons | ✅ | – | – | – | ✅ |
 | Audit log | 👁 | – | – | – | 👁 |
 
@@ -59,10 +84,12 @@ Daily table with 5 categories. Each update is a new history row; the physician c
 PDF/JPG/PNG up to 10 MB, validated by file signature, stored in a private bucket, opened through 2-minute signed URLs, linked to player and optionally examination/injury. Archived, not deleted.
 
 ## Reports (PDF)
-13 reports with official logo, reference number, physician, signature block, page numbers and confidentiality footer; previewed before download.
+13 reports. Header: medical brand logo, physician name and specialty, then a separate navy band with the **club logo**, club name,
+country and season, reference number and date of issue. Footer: *Dr. Faraj Lashika · Orthopedic & Sports Medicine · Official Team Medical Records*.
+Logos are rasterised with their aspect ratio preserved. Reports include reference number, physician, signature block, page numbers and confidentiality footer; previewed before download.
 
 ## Export center
-11 CSV exports (UTF-8 with BOM, CRLF, formula-injection protection) with date, season, player, injury type, status and region filters, plus a physician-only full JSON backup. Exports are audit-logged.
+Scope: **current club** or **all my clubs**; every CSV starts with *Club ID* and *Club Name* columns. 11 CSV exports (UTF-8 with BOM, CRLF, formula-injection protection) with date, season, player, injury type, status and region filters, plus a physician-only full JSON backup. Exports are audit-logged.
 
 ## Analytics
 Total/new/recurrent injuries, injuries per player, by region/position/mechanism, contact vs non-contact, match vs training, total and average days lost,
