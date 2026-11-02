@@ -3,7 +3,7 @@ import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import clsx from 'clsx';
 import {
   Activity, BarChart3, CalendarCheck2, ClipboardList, Download, FileStack, FileText, HeartPulse, LayoutDashboard,
-  LogOut, Menu, Plus, Search, Settings, ShieldCheck, Stethoscope, UserPlus, Users, X, Zap, History, BadgeCheck, WifiOff, Footprints, Layers, Shield,
+  LogOut, Menu, Plus, Search, Settings, ShieldCheck, Stethoscope, UserPlus, Users, X, Zap, History, BadgeCheck, WifiOff, Footprints, Layers, Shield, KeyRound,
 } from 'lucide-react';
 import { useRegisterSW } from 'virtual:pwa-register/react';
 import { useAuth } from '../../context/AuthContext';
@@ -13,6 +13,7 @@ import { Button, Logo, PlayerAvatar } from '../ui';
 import { BrandLogo, CurrentClubBadge } from '../Branding';
 import { ClubSwitcher } from '../ClubSwitcher';
 import { useBrand } from '../../context/BrandContext';
+import { ChangePasswordModal } from '../ChangePasswordModal';
 import { useOnline } from '../../hooks/useOnline';
 import type { Capabilities } from '../../lib/permissions';
 
@@ -49,6 +50,7 @@ const NAV: { group: string; items: NavItem[] }[] = [
 export function AppLayout() {
   const { profile, caps, signOut } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [pwOpen, setPwOpen] = useState(false);
   const location = useLocation();
   const online = useOnline();
   useEffect(() => setMobileOpen(false), [location.pathname]);
@@ -86,6 +88,7 @@ export function AppLayout() {
             <p className="truncate text-sm font-semibold text-white">{profile?.full_name}</p>
             <p className="truncate text-xs text-brand-goldLight">{profile?.role ? ROLE_LABELS[profile.role] : ''}</p>
           </div>
+          <button onClick={() => setPwOpen(true)} className="rounded-lg p-2 text-neutral-400 hover:bg-white/5 hover:text-white" aria-label="Change password" title="Change password"><KeyRound className="h-4 w-4" /></button>
           <button onClick={() => void signOut()} className="rounded-lg p-2 text-neutral-400 hover:bg-white/5 hover:text-white" aria-label="Sign out" title="Sign out"><LogOut className="h-4 w-4" /></button>
         </div>
       </div>
@@ -115,6 +118,7 @@ export function AppLayout() {
         </main>
       </div>
       <MobileNav />
+      <ChangePasswordModal open={pwOpen} onClose={() => setPwOpen(false)} />
     </div>
   );
 }
