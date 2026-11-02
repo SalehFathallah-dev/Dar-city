@@ -1,0 +1,12 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html { -webkit-tap-highlight-color: transparent; }
+body { @apply bg-[#F6F5F2] font-sans text-neutral-900 antialiased; }
+input[type='date'], input[type='time'] { min-height: 42px; }
+@media print {
+  aside, header, nav, .no-print { display: none !important; }
+  main { padding: 0 !important; }
+  .lg\:pl-64 { padding-left: 0 !important; }
+}
