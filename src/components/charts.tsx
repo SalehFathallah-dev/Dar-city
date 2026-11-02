@@ -48,7 +48,7 @@ export function DonutChart({ data, height = 240, availability }: { data: Datum[]
   return (
     <ResponsiveContainer width="100%" height={height}>
       <PieChart>
-        <Pie data={data} dataKey="value" nameKey="name" innerRadius="55%" outerRadius="80%" paddingAngle={2} stroke="none">
+        <Pie isAnimationActive={false} data={data} dataKey="value" nameKey="name" innerRadius="55%" outerRadius="80%" paddingAngle={2} stroke="none">
           {data.map((d, i) => <Cell key={d.name} fill={availability ? AVAIL_COLORS[d.name] ?? CHART_COLORS[i] : CHART_COLORS[i % CHART_COLORS.length]} />)}
         </Pie>
         <Tooltip contentStyle={tooltipStyle} />

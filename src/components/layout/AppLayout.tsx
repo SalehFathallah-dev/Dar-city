@@ -230,7 +230,7 @@ function MobileNav() {
     <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-neutral-200 bg-white/95 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden">
       <div className="flex items-end justify-around px-2">
         {items.map((i) => (
-          <NavLink key={i.to} to={i.to} end={i.to === '/'}
+          <NavLink key={i.to} to={i.to} end
             className={({ isActive }) => clsx('flex flex-1 flex-col items-center gap-0.5 py-2 text-[10px] font-semibold uppercase tracking-wide',
               'primary' in i && i.primary ? 'text-white' : isActive ? 'text-brand-orange' : 'text-neutral-500')}>
             {'primary' in i && i.primary

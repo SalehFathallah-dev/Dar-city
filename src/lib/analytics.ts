@@ -55,7 +55,10 @@ export function sumBy<T>(items: T[], key: (t: T) => string | null | undefined, v
 export function monthlyTrend(injuries: Pick<Injury, 'injury_date'>[], range: DateRange): { month: string; injuries: number }[] {
   const dates = injuries.map((i) => i.injury_date).sort();
   const from = range.from ?? dates[0];
-  const to = range.to ?? dates[dates.length - 1] ?? todayISO();
+  // Never extend the trend into future months (they would show as false zeros).
+  const today = todayISO();
+  const rawTo = range.to ?? dates[dates.length - 1] ?? today;
+  const to = rawTo > today ? today : rawTo;
   if (!from) return [];
   const start = parseISODate(from)!; const end = parseISODate(to)!;
   const out: { month: string; injuries: number }[] = [];
