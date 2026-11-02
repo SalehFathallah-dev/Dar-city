@@ -19,6 +19,8 @@ update public.profiles set is_active = true, role = case email
   when 'coach@test.local' then 'head_coach'::app_role
   when 'admin@test.local' then 'super_admin'::app_role end
  where email <> 'pending@test.local';
+-- Existing staff accounts belong to Dar City (migration 4 grants this to accounts that existed before the upgrade).
+insert into public.club_members (club_id, user_id) select '00000000-0000-4000-8000-00000000c001', id from public.profiles where email <> 'pending@test.local' on conflict do nothing;
 
 create or replace function pg_temp.act_as(uid text) returns void language plpgsql as $$
 begin
@@ -40,22 +42,22 @@ do $$ begin
   assert (select count(*) from public.medical_clearances) = 5, 'exam trigger should have created 5 clearances';
 end $$;
 -- player registration with generated ID
-insert into public.players (full_name, date_of_birth, position, jersey_number, height_cm, weight_kg)
-values ('Test Player', '2001-01-01', 'Center', 45, 200, 100);
+insert into public.players (club_id, full_name, date_of_birth, position, jersey_number, height_cm, weight_kg)
+values ('00000000-0000-4000-8000-00000000c001', 'Test Player', '2001-01-01', 'Center', 45, 200, 100);
 do $$ begin
-  assert (select player_code ~ '^DCB-\d{4}$' from public.players where full_name = 'Test Player'), 'player code not generated';
+  assert (select player_code = 'DCB-0006' from public.players where full_name = 'Test Player'), 'Dar City player numbering should continue at DCB-0006';
   assert (select bmi = 25.0 from public.players where full_name = 'Test Player'), 'BMI not calculated';
 end $$;
 -- 3. Duplicate jersey prevention
 do $$ begin
   begin
-    insert into public.players (full_name, date_of_birth, position, jersey_number) values ('Dup Jersey', '2001-01-01', 'Center', 45);
+    insert into public.players (club_id, full_name, date_of_birth, position, jersey_number) values ('00000000-0000-4000-8000-00000000c001', 'Dup Jersey', '2001-01-01', 'Center', 45);
     raise exception 'duplicate jersey was accepted';
   exception when unique_violation then null; end;
 end $$;
 -- archived players free their jersey number
 update public.players set status = 'archived' where full_name = 'Test Player';
-insert into public.players (full_name, date_of_birth, position, jersey_number) values ('Reuse Jersey', '2001-01-01', 'Center', 45);
+insert into public.players (club_id, full_name, date_of_birth, position, jersey_number) values ('00000000-0000-4000-8000-00000000c001', 'Reuse Jersey', '2001-01-01', 'Center', 45);
 do $$ begin
   assert (select archived_at is not null from public.players where full_name = 'Test Player'), 'archived_at not set';
 end $$;
@@ -233,4 +235,5 @@ do $$ begin
   assert exists (select 1 from public.audit_logs where record_type = 'profiles' and action = 'UPDATE' and old_values ? 'role'), 'role change not audited';
 end $$;
 
+\ir club_tests.sql
 \echo 'ALL DATABASE TESTS PASSED'

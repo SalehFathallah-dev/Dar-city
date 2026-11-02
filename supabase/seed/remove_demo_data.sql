@@ -15,4 +15,7 @@ delete from public.medical_histories where player_id in (select id from public.p
 delete from public.player_emergency_contacts where player_id in (select id from public.players where is_demo);
 delete from public.players where is_demo;
 delete from public.team_exposures where notes = 'DEMO exposure';
+delete from public.team_seasons where club_id in (select id from public.clubs where is_demo);
+delete from public.club_members where club_id in (select id from public.clubs where is_demo);
+delete from public.clubs where is_demo;
 commit;

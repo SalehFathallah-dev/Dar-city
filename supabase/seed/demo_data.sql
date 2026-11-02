@@ -3,21 +3,23 @@
 -- Every record is flagged is_demo = true and player names start with "DEMO".
 -- Do NOT run this on a production database holding real medical records
 -- without explicit confirmation. Remove with supabase/seed/remove_demo_data.sql
+-- Club 1 = Dar City Basketball Team (created by migration 4).
+-- Club 2 = DEMO Kilimanjaro Warriors (fictional, created below).
 -- =====================================================================
 begin;
 
-insert into public.team_seasons (id, name, start_date, end_date, is_current, notes)
-values ('00000000-0000-4000-8000-00000000a001', '2026/2027', '2026-09-01', '2027-06-30', true, 'DEMO season')
-on conflict (name) do nothing;
+insert into public.team_seasons (id, club_id, name, start_date, end_date, is_current, notes)
+values ('00000000-0000-4000-8000-00000000a001', '00000000-0000-4000-8000-00000000c001', '2026/2027', '2026-09-01', '2027-06-30', true, 'DEMO season')
+on conflict (club_id, name) do nothing;
 
-insert into public.players (id, full_name, date_of_birth, nationality, phone, email, address, jersey_number, position,
+insert into public.players (id, club_id, full_name, date_of_birth, nationality, phone, email, address, jersey_number, position,
   height_cm, weight_kg, dominant_hand, team_category, registration_date, season_id, status, is_demo)
 values
- ('00000000-0000-4000-8000-0000000000d1','DEMO Juma Mwakalinga','1999-04-12','Tanzanian','+255 700 000 001','demo.juma@example.com','DEMO – Mikocheni, Dar es Salaam',3,'Point Guard',185,80,'Right','Senior Men','2026-09-01','00000000-0000-4000-8000-00000000a001','active',true),
- ('00000000-0000-4000-8000-0000000000d2','DEMO Baraka Kimaro','2000-08-21','Tanzanian','+255 700 000 002','demo.baraka@example.com','DEMO – Sinza, Dar es Salaam',7,'Shooting Guard',192,86,'Left','Senior Men','2026-09-01','00000000-0000-4000-8000-00000000a001','active',true),
- ('00000000-0000-4000-8000-0000000000d3','DEMO Emmanuel Okello','1997-02-03','Ugandan','+255 700 000 003','demo.emmanuel@example.com','DEMO – Masaki, Dar es Salaam',11,'Small Forward',198,94,'Right','Senior Men','2026-09-01','00000000-0000-4000-8000-00000000a001','active',true),
- ('00000000-0000-4000-8000-0000000000d4','DEMO Hamisi Said','1998-11-30','Tanzanian','+255 700 000 004','demo.hamisi@example.com','DEMO – Kinondoni, Dar es Salaam',21,'Power Forward',203,102,'Right','Senior Men','2026-09-01','00000000-0000-4000-8000-00000000a001','active',true),
- ('00000000-0000-4000-8000-0000000000d5','DEMO Daniel Mushi','1996-06-15','Tanzanian','+255 700 000 005','demo.daniel@example.com','DEMO – Upanga, Dar es Salaam',33,'Center',211,112,'Both','Senior Men','2026-09-01','00000000-0000-4000-8000-00000000a001','active',true);
+ ('00000000-0000-4000-8000-0000000000d1','00000000-0000-4000-8000-00000000c001','DEMO Juma Mwakalinga','1999-04-12','Tanzanian','+255 700 000 001','demo.juma@example.com','DEMO – Mikocheni, Dar es Salaam',3,'Point Guard',185,80,'Right','Senior Men','2026-09-01','00000000-0000-4000-8000-00000000a001','active',true),
+ ('00000000-0000-4000-8000-0000000000d2','00000000-0000-4000-8000-00000000c001','DEMO Baraka Kimaro','2000-08-21','Tanzanian','+255 700 000 002','demo.baraka@example.com','DEMO – Sinza, Dar es Salaam',7,'Shooting Guard',192,86,'Left','Senior Men','2026-09-01','00000000-0000-4000-8000-00000000a001','active',true),
+ ('00000000-0000-4000-8000-0000000000d3','00000000-0000-4000-8000-00000000c001','DEMO Emmanuel Okello','1997-02-03','Ugandan','+255 700 000 003','demo.emmanuel@example.com','DEMO – Masaki, Dar es Salaam',11,'Small Forward',198,94,'Right','Senior Men','2026-09-01','00000000-0000-4000-8000-00000000a001','active',true),
+ ('00000000-0000-4000-8000-0000000000d4','00000000-0000-4000-8000-00000000c001','DEMO Hamisi Said','1998-11-30','Tanzanian','+255 700 000 004','demo.hamisi@example.com','DEMO – Kinondoni, Dar es Salaam',21,'Power Forward',203,102,'Right','Senior Men','2026-09-01','00000000-0000-4000-8000-00000000a001','active',true),
+ ('00000000-0000-4000-8000-0000000000d5','00000000-0000-4000-8000-00000000c001','DEMO Daniel Mushi','1996-06-15','Tanzanian','+255 700 000 005','demo.daniel@example.com','DEMO – Upanga, Dar es Salaam',33,'Center',211,112,'Both','Senior Men','2026-09-01','00000000-0000-4000-8000-00000000a001','active',true);
 
 insert into public.player_emergency_contacts (player_id, contact_name, relationship, phone)
 select id, 'DEMO Contact for ' || replace(full_name, 'DEMO ', ''), 'Parent', '+255 711 000 00' || right(id::text, 1)
@@ -131,10 +133,35 @@ insert into public.player_availability (player_id, injury_id, effective_date, av
  ('00000000-0000-4000-8000-0000000000d4','00000000-0000-4000-8000-0000000000f2','2026-10-05','MODIFIED TRAINING','Injured','Limit jumping volume; no back-to-back plyometric sessions','Can play limited minutes',null,'2026-11-05',true),
  ('00000000-0000-4000-8000-0000000000d5','00000000-0000-4000-8000-0000000000f4','2026-10-25','MODIFIED TRAINING','Injured','Buddy strapping; avoid contact rebounding drills','Shooting work allowed','Splint weaned','2026-11-04',true);
 
-insert into public.team_exposures (season_id, session_date, session_type, duration_minutes, players_exposed, notes)
-select '00000000-0000-4000-8000-00000000a001', d::date, case when extract(dow from d) = 6 then 'Match' else 'Training' end,
+insert into public.team_exposures (club_id, season_id, session_date, session_type, duration_minutes, players_exposed, notes)
+select '00000000-0000-4000-8000-00000000c001', '00000000-0000-4000-8000-00000000a001', d::date, case when extract(dow from d) = 6 then 'Match' else 'Training' end,
        case when extract(dow from d) = 6 then 48 else 90 end, case when extract(dow from d) = 6 then 10 else 14 end, 'DEMO exposure'
   from generate_series('2026-09-01'::date, '2026-10-31'::date, interval '1 day') d
  where extract(dow from d) in (1,2,3,4,6);
+
+
+-- ---------------------------------------------------------------------
+-- Second fictional club to demonstrate multi-club separation
+-- ---------------------------------------------------------------------
+insert into public.clubs (id, name, short_name, player_id_prefix, country, city, sport, competition_category, league, current_season, contact_person, status, is_demo, medical_notes)
+values ('00000000-0000-4000-8000-00000000c0d2', 'DEMO Kilimanjaro Warriors Basketball Club', 'DEMO Kili Warriors', 'KWB', 'Tanzania', 'Moshi', 'Basketball',
+        'Senior Men', 'DEMO Regional League', '2026/2027', 'DEMO Club Secretary', 'active', true, 'DEMO club – fictional data');
+insert into public.team_seasons (id, club_id, name, start_date, end_date, is_current, notes)
+values ('00000000-0000-4000-8000-00000000a0d2', '00000000-0000-4000-8000-00000000c0d2', '2026/2027', '2026-09-15', '2027-06-30', true, 'DEMO season');
+insert into public.players (id, club_id, full_name, date_of_birth, nationality, jersey_number, position, height_cm, weight_kg, dominant_hand, season_id, registration_date, is_demo) values
+ ('00000000-0000-4000-8000-0000000002d1','00000000-0000-4000-8000-00000000c0d2','DEMO Musa Lyimo','2001-03-09','Tanzanian',3,'Point Guard',183,78,'Right','00000000-0000-4000-8000-00000000a0d2','2026-09-15',true),
+ ('00000000-0000-4000-8000-0000000002d2','00000000-0000-4000-8000-00000000c0d2','DEMO Peter Massawe','1999-12-01','Tanzanian',12,'Small Forward',196,90,'Right','00000000-0000-4000-8000-00000000a0d2','2026-09-15',true),
+ ('00000000-0000-4000-8000-0000000002d3','00000000-0000-4000-8000-00000000c0d2','DEMO Ally Mrisho','1998-07-22','Tanzanian',44,'Center',208,108,'Left','00000000-0000-4000-8000-00000000a0d2','2026-09-15',true);
+insert into public.medical_examinations (player_id, season_id, examination_date, physician_name, examination_type, bp_systolic, bp_diastolic, heart_rate, height_cm, weight_kg, clinical_summary, clearance_status, physician_signature, signed_at, is_demo)
+select id, '00000000-0000-4000-8000-00000000a0d2', '2026-09-18', 'Dr. Faraj Lashika', 'Pre-Season', 120, 76, 58, height_cm, weight_kg, 'DEMO – Normal examination', 'Cleared for Full Participation', 'Dr. Faraj Lashika', now(), true
+  from public.players where club_id = '00000000-0000-4000-8000-00000000c0d2';
+insert into public.injuries (id, player_id, season_id, injury_date, setting, mechanism, contact_type, onset, body_region, body_side, injury_type, diagnosis, severity, injury_grade, status, is_demo)
+values ('00000000-0000-4000-8000-0000000002f1','00000000-0000-4000-8000-0000000002d3','00000000-0000-4000-8000-00000000a0d2','2026-10-20','Training','Landing','Non-Contact','Acute','Knee','Left','Ligament Sprain','MCL sprain','Moderate','Grade II','Under Treatment',true);
+insert into public.injury_followups (injury_id, followup_date, pain_score, swelling, response_to_treatment, next_followup_date, physician_notes)
+values ('00000000-0000-4000-8000-0000000002f1','2026-10-27',4,'Mild','Improving','2026-11-06','DEMO');
+insert into public.player_availability (player_id, injury_id, effective_date, availability, medical_status, restrictions, is_demo) values
+ ('00000000-0000-4000-8000-0000000002d1',null,'2026-10-20','FULLY AVAILABLE','Fit',null,true),
+ ('00000000-0000-4000-8000-0000000002d2',null,'2026-10-20','FULLY AVAILABLE','Fit',null,true),
+ ('00000000-0000-4000-8000-0000000002d3','00000000-0000-4000-8000-0000000002f1','2026-10-20','NOT AVAILABLE','Injured','No court work',true);
 
 commit;
