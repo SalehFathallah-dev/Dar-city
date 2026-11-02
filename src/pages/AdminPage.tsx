@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Building2, CalendarRange, ImagePlus, Plus, Settings, ShieldCheck, Stethoscope, UserPlus, Users } from 'lucide-react';
+import { Building2, CalendarRange, Plus, Settings, ShieldCheck, Stethoscope, UserPlus, Users } from 'lucide-react';
 import { useClub } from '../context/ClubContext';
 import { useBrand } from '../context/BrandContext';
 import { BrandLogo, ClubLogo } from '../components/Branding';
+import { ImagePicker } from '../components/ImagePicker';
 import * as api from '../lib/api';
 import { useAsync } from '../hooks/useAsync';
 import { useAuth } from '../context/AuthContext';
@@ -265,20 +266,12 @@ function BrandTab() {
             <Field label="Specialty" required><Input value={f.specialty} onChange={(e) => setF({ ...f, specialty: e.target.value })} /></Field>
           </Grid>
           <Field label="Contact information" hint="Printed under the brand name on reports"><Textarea rows={2} value={f.contact} onChange={(e) => setF({ ...f, contact: e.target.value })} placeholder="Phone · E-mail · Address" /></Field>
-          <Grid>
-            <Field label="Personal medical logo" hint="PNG/JPG/WEBP/SVG, max 2 MB">
-              <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-neutral-300 px-3 py-2 text-sm font-semibold hover:border-brand-gold">
-                <ImagePlus className="h-4 w-4" />{logo ? logo.name : 'Upload new logo'}
-                <input type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" className="hidden" onChange={(e) => setLogo(e.target.files?.[0] ?? null)} />
-              </label>
-            </Field>
-            <Field label="Signature image (optional)" hint="Placed on the signature line of reports">
-              <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-neutral-300 px-3 py-2 text-sm font-semibold hover:border-brand-gold">
-                <ImagePlus className="h-4 w-4" />{sig ? sig.name : 'Upload signature'}
-                <input type="file" accept="image/png,image/jpeg,image/webp" className="hidden" onChange={(e) => setSig(e.target.files?.[0] ?? null)} />
-              </label>
-            </Field>
-          </Grid>
+          <ImagePicker kind="logo" value={logo} onChange={setLogo} label="Personal medical logo"
+            current={<div className="flex h-20 w-28 items-center justify-center rounded-xl bg-brand-cream p-1"><BrandLogo height={60} /></div>}
+            hint="Choose from the gallery – PNG, JPG, WEBP or SVG." />
+          <ImagePicker kind="signature" value={sig} onChange={setSig} label="Signature image (optional)"
+            current={signatureUrl ? <img src={signatureUrl} alt="Signature" className="h-20 w-28 rounded-xl bg-white object-contain p-1 ring-1 ring-neutral-200" /> : <div className="flex h-20 w-28 items-center justify-center rounded-xl border border-dashed border-neutral-300 text-xs text-neutral-400">No signature</div>}
+            hint="Photograph your signature on white paper, or choose it from the gallery." />
           <div className="flex flex-wrap justify-end gap-2">
             {brand.logoPath && <Button variant="ghost" onClick={resetLogo}>Restore official logo</Button>}
             {brand.signaturePath && <Button variant="ghost" onClick={async () => { await api.saveBrand({ signaturePath: '' }); await reload(); }}>Remove signature</Button>}

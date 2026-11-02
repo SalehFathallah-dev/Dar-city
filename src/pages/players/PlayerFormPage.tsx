@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Camera, Contact, Dumbbell, Save, User } from 'lucide-react';
+import { Contact, Dumbbell, Save, User } from 'lucide-react';
+import { ImagePicker } from '../../components/ImagePicker';
 import * as api from '../../lib/api';
 import { useReference } from '../../context/ReferenceContext';
 import { useToast } from '../../context/ToastContext';
@@ -99,16 +100,10 @@ export default function PlayerFormPage() {
       <PageHeader title={id ? 'Edit Player' : 'Add New Player'} subtitle={id ? form.full_name : 'A unique Player ID is generated automatically'} icon={<User className="h-6 w-6" />} />
       <div className="space-y-4">
         <FormSection title="Personal Information" icon={<User className="h-5 w-5" />}>
-          <div className="mb-5 flex items-center gap-4">
-            <PlayerAvatar name={form.full_name || '?'} photoPath={photo ? null : photoPath} size={72} />
-            <div>
-              <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-neutral-300 px-3 py-2 text-sm font-semibold hover:border-brand-gold">
-                <Camera className="h-4 w-4" /> {photo ? photo.name : 'Player Photograph'}
-                <input type="file" accept="image/jpeg,image/png,image/webp" capture="user" className="hidden" onChange={(e) => setPhoto(e.target.files?.[0] ?? null)} />
-              </label>
-              <p className="mt-1 text-xs text-neutral-400">JPG/PNG/WEBP up to 5 MB. Stored privately.</p>
-              {errors.photo && <p className="text-xs text-brand-red">{errors.photo}</p>}
-            </div>
+          <div className="mb-5">
+            <ImagePicker kind="photo" value={photo} onChange={setPhoto} label="Player photograph" error={errors.photo}
+              current={<PlayerAvatar name={form.full_name || '?'} photoPath={photoPath} size={80} />}
+              hint="From the phone gallery or the camera. Resized automatically and stored privately." />
           </div>
           <Grid>
             <Field label="Full Name" required error={errors.full_name} className="sm:col-span-2"><Input value={form.full_name} onChange={(e) => set('full_name')(e.target.value)} error={!!errors.full_name} /></Field>

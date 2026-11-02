@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { Activity, BadgeCheck, CalendarCheck2, ClipboardList, FileText, HeartPulse, History, Pencil, Pill, Plus, Stethoscope, User } from 'lucide-react';
+import { Activity, BadgeCheck, CalendarCheck2, Camera, ClipboardList, FileText, HeartPulse, History, Pencil, Pill, Plus, Stethoscope, User } from 'lucide-react';
+import { ImagePicker } from '../../components/ImagePicker';
 import * as api from '../../lib/api';
 import * as reports from '../../lib/reports';
 import { useAsync } from '../../hooks/useAsync';
@@ -30,6 +31,7 @@ export default function PlayerProfilePage() {
   const setTab = (t: TabId) => setParams({ tab: t }, { replace: true });
   const pdf = useReportPreview();
   const { club } = useClub();
+  const [photoOpen, setPhotoOpen] = useState(false);
 
   const player = useAsync(() => api.getPlayer(id!), [id]);
   const contacts = useAsync(() => caps.viewEmergencyContacts ? api.listContacts(id!) : Promise.resolve([]), [id, caps.viewEmergencyContacts]);
@@ -74,7 +76,15 @@ export default function PlayerProfilePage() {
       <div className="relative overflow-hidden rounded-3xl bg-brand-navy p-5 text-white shadow-xl sm:p-6">
         <ClubLogo logo={club?.logo_url} name={club?.short_name ?? ''} size={110} className="pointer-events-none absolute -right-3 -top-3 opacity-15" />
         <div className="relative flex flex-col gap-5 sm:flex-row sm:items-center">
-          <PlayerAvatar name={p.full_name} photoPath={p.photo_path} size={96} />
+          <div className="relative shrink-0">
+            <PlayerAvatar name={p.full_name} photoPath={p.photo_path} size={96} />
+            {caps.managePlayers && (
+              <button onClick={() => setPhotoOpen(true)} aria-label="Change photo" title="Change photo"
+                className="absolute -bottom-1 -right-1 flex h-9 w-9 items-center justify-center rounded-full bg-brand-gold text-white shadow-lg ring-2 ring-brand-navy hover:bg-brand-goldDark">
+                <Camera className="h-4 w-4" />
+              </button>
+            )}
+          </div>
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2">
               <span className="font-display text-4xl font-extrabold text-brand-gold">#{p.jersey_number ?? '–'}</span>
@@ -225,8 +235,28 @@ export default function PlayerProfilePage() {
           {m && tab === 'timeline' && <Card title="Activity Timeline"><PlayerTimeline data={m} /></Card>}
         </div>
       )}
+      {photoOpen && <PhotoModal playerId={p.id} name={p.full_name} photoPath={p.photo_path} onClose={() => setPhotoOpen(false)} onSaved={() => { setPhotoOpen(false); void player.reload(); }} />}
       {pdf.modal}
     </div>
+  );
+}
+
+function PhotoModal({ playerId, name, photoPath, onClose, onSaved }: { playerId: string; name: string; photoPath: string | null; onClose: () => void; onSaved: () => void }) {
+  const toast = useToast();
+  const [file, setFile] = useState<File | null>(null);
+  const [saving, setSaving] = useState(false);
+  const save = async () => {
+    if (!file) return;
+    setSaving(true);
+    try { await api.uploadPlayerPhoto(playerId, file); toast.success('Player photo updated'); onSaved(); }
+    catch (e) { toast.error((e as Error).message); } finally { setSaving(false); }
+  };
+  return (
+    <Modal open onClose={onClose} title="Player Photo"
+      footer={<><Button variant="secondary" onClick={onClose}>Cancel</Button><Button loading={saving} disabled={!file} onClick={save}>Save Photo</Button></>}>
+      <ImagePicker kind="photo" value={file} onChange={setFile} current={<PlayerAvatar name={name} photoPath={photoPath} size={80} />}
+        hint="Choose a picture from the phone gallery or take a new one." />
+    </Modal>
   );
 }
 

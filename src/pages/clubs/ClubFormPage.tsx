@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Building2, ImagePlus, Phone, Save, Stethoscope } from 'lucide-react';
+import { Building2, Phone, Save, Stethoscope } from 'lucide-react';
+import { ImagePicker } from '../../components/ImagePicker';
 import * as api from '../../lib/api';
 import { useClub } from '../../context/ClubContext';
 import { useToast } from '../../context/ToastContext';
@@ -23,7 +24,6 @@ export default function ClubFormPage({ onCreated }: { onCreated?: (c: Club) => v
   const [form, setForm] = useState(empty);
   const [existing, setExisting] = useState<Club | null>(null);
   const [logo, setLogo] = useState<File | null>(null);
-  const [preview, setPreview] = useState<string | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(!!id);
   const [saving, setSaving] = useState(false);
@@ -37,11 +37,6 @@ export default function ClubFormPage({ onCreated }: { onCreated?: (c: Club) => v
         phone: c.phone ?? '', email: c.email ?? '', address: c.address ?? '', medical_notes: c.medical_notes ?? '', registration_date: c.registration_date, status: c.status });
     }).catch((e) => toast.error(e.message)).finally(() => setLoading(false));
   }, [id, toast]);
-  useEffect(() => {
-    if (!logo) { setPreview(null); return; }
-    const u = URL.createObjectURL(logo); setPreview(u);
-    return () => URL.revokeObjectURL(u);
-  }, [logo]);
 
   const set = (k: keyof typeof form) => (v: string) => setForm((f) => ({ ...f, [k]: v }));
   const save = async () => {
@@ -76,17 +71,10 @@ export default function ClubFormPage({ onCreated }: { onCreated?: (c: Club) => v
       <PageHeader title={id ? 'Edit Club' : 'Register New Club'} subtitle={id ? `${existing?.club_code} · ${existing?.name}` : 'A Club ID is generated automatically'} icon={<Building2 className="h-6 w-6" />} />
       <div className="space-y-4">
         <FormSection title="Club Identity" icon={<Building2 className="h-5 w-5" />}>
-          <div className="mb-5 flex flex-wrap items-center gap-4">
-            {preview ? <img src={preview} alt="Logo preview" className="h-20 w-20 rounded-xl bg-white object-contain p-1 ring-1 ring-neutral-200" />
-              : <ClubLogo logo={existing?.logo_url} name={form.short_name || '?'} size={80} />}
-            <div>
-              <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-neutral-300 px-3 py-2 text-sm font-semibold hover:border-brand-gold">
-                <ImagePlus className="h-4 w-4" /> {logo ? logo.name : 'Upload Club Logo'}
-                <input type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml,.svg" className="hidden" onChange={(e) => setLogo(e.target.files?.[0] ?? null)} />
-              </label>
-              <p className="mt-1 text-xs text-neutral-400">PNG, JPG, WEBP or SVG (scripts not allowed) · max 2 MB · stored privately. This never changes the medical brand logo.</p>
-              {errors.logo && <p className="text-xs text-brand-red">{errors.logo}</p>}
-            </div>
+          <div className="mb-5">
+            <ImagePicker kind="logo" value={logo} onChange={setLogo} label="Club logo" error={errors.logo}
+              current={<ClubLogo logo={existing?.logo_url} name={form.short_name || '?'} size={80} />}
+              hint="Choose from the gallery (PNG, JPG, WEBP or SVG). This never changes the medical brand logo." />
           </div>
           <Grid>
             <Field label="Official club name" required error={errors.name} className="sm:col-span-2"><Input value={form.name} onChange={(e) => set('name')(e.target.value)} error={!!errors.name} /></Field>
