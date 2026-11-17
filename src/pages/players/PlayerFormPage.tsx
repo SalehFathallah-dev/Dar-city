@@ -49,6 +49,15 @@ export default function PlayerFormPage() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(!!id);
   const [saving, setSaving] = useState(false);
+  const [categories, setCategories] = useState<string[]>([]);
+  useEffect(() => {
+    void api.listCategories().then((c) => {
+      const names = c.filter((x) => x.is_active).map((x) => x.name);
+      setCategories(names);
+      // New player: default to the first category of the club.
+      if (!id && names.length) setForm((f) => (names.includes(f.team_category) ? f : { ...f, team_category: names[0] }));
+    }).catch(() => undefined);
+  }, [id]);
 
   useEffect(() => {
     if (!id) { setForm((f) => ({ ...f, season_id: currentSeason?.id ?? '' })); return; }
@@ -126,7 +135,11 @@ export default function PlayerFormPage() {
         <FormSection title="Basketball Information" icon={<Dumbbell className="h-5 w-5" />}>
           <Grid>
             <Field label="Jersey Number" error={errors.jersey_number}><Input type="number" inputMode="numeric" min={0} max={99} value={form.jersey_number} onChange={(e) => set('jersey_number')(e.target.value)} error={!!errors.jersey_number} /></Field>
-            <Field label="Team Category"><Input value={form.team_category} onChange={(e) => set('team_category')(e.target.value)} /></Field>
+            <Field label="Age category" hint={categories.length ? undefined : 'Add categories in Categories & Staff'}>
+              {categories.length
+                ? <Select value={form.team_category} onChange={(e) => set('team_category')(e.target.value)} options={categories.includes(form.team_category) || !form.team_category ? categories : [form.team_category, ...categories]} />
+                : <Input value={form.team_category} onChange={(e) => set('team_category')(e.target.value)} />}
+            </Field>
             <Field label="Playing Position" required error={errors.position} className="sm:col-span-2"><SegmentedControl value={form.position} options={POSITIONS} onChange={set('position')} /></Field>
             <Field label="Height (cm)" error={errors.height_cm}><Input type="number" inputMode="decimal" step="0.1" value={form.height_cm} onChange={(e) => set('height_cm')(e.target.value)} error={!!errors.height_cm} /></Field>
             <Field label="Weight (kg)" error={errors.weight_kg}><Input type="number" inputMode="decimal" step="0.1" value={form.weight_kg} onChange={(e) => set('weight_kg')(e.target.value)} error={!!errors.weight_kg} /></Field>

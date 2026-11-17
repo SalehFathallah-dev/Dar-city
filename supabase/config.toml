@@ -33,3 +33,6 @@ file_size_limit = "10MiB"
 
 [functions.admin-users]
 verify_jwt = true
+
+[functions.self-register]
+verify_jwt = false

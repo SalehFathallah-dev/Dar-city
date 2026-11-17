@@ -13,6 +13,7 @@ import type { Capabilities } from './lib/permissions';
 import LoginPage from './pages/LoginPage';
 import SetupRequired from './pages/SetupRequired';
 import PendingAccess from './pages/PendingAccess';
+import RegistrationPage from './pages/RegistrationPage';
 
 const AthletePortalPage = lazy(() => import('./pages/athlete/AthletePortalPage'));
 
@@ -42,6 +43,8 @@ const AuditPage = lazy(() => import('./pages/AuditPage'));
 const ResetPasswordPage = lazy(() => import('./pages/ResetPasswordPage'));
 const OverviewPage = lazy(() => import('./pages/OverviewPage'));
 const TeamStatusPage = lazy(() => import('./pages/TeamStatusPage'));
+const RequestsPage = lazy(() => import('./pages/RequestsPage'));
+const ClubSetupPage = lazy(() => import('./pages/ClubSetupPage'));
 const ClubsPage = lazy(() => import('./pages/clubs/ClubsPage'));
 const ClubFormPage = lazy(() => import('./pages/clubs/ClubFormPage'));
 const ClubProfilePage = lazy(() => import('./pages/clubs/ClubProfilePage'));
@@ -63,6 +66,8 @@ function Shell() {
       </Routes>
     );
   }
+  // New self-registered account: choose club + own name, then wait for approval.
+  if (profile && !profile.role) return <RegistrationPage />;
   if (!profile?.is_active || !profile.role) return <PendingAccess />;
   // Players only ever see their own portal (no clubs, no team data).
   if (profile.role === 'athlete') return <Suspense fallback={<Spinner />}><AthletePortalPage /></Suspense>;
@@ -95,6 +100,8 @@ function ClubScopedApp() {
             <Route path="clubs/:id/edit" element={<Guard need={(c) => c.manageClubs}><ClubFormPage /></Guard>} />
             <Route index element={<Dashboard />} />
             <Route path="team-status" element={<Guard need={(c) => c.viewTeamSummary}><TeamStatusPage /></Guard>} />
+            <Route path="requests" element={<Guard need={(c) => c.manageUsers}><RequestsPage /></Guard>} />
+            <Route path="club-setup" element={<Guard need={(c) => c.manageUsers}><ClubSetupPage /></Guard>} />
             <Route path="players" element={<PlayersPage />} />
             <Route path="players/new" element={<Guard need={(c) => c.managePlayers}><PlayerFormPage /></Guard>} />
             <Route path="players/:id" element={<PlayerProfilePage />} />

@@ -2,12 +2,13 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import clsx from 'clsx';
 import {
-  ClipboardCheck,
+  ClipboardCheck, UserCheck,
   Activity, BarChart3, CalendarCheck2, ClipboardList, Download, FileStack, FileText, HeartPulse, LayoutDashboard,
   LogOut, Menu, Plus, Search, Settings, Stethoscope, UserPlus, Users, X, Zap, History, BadgeCheck, Footprints, Layers, Shield, KeyRound,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useOnline } from '../../hooks/useOnline';
+import { listRegistrations } from '../../lib/api';
 import { useReference } from '../../context/ReferenceContext';
 import { ROLE_LABELS } from '../../lib/constants';
 import { Button, Logo, PlayerAvatar } from '../ui';
@@ -17,7 +18,7 @@ import { useBrand } from '../../context/BrandContext';
 import { ChangePasswordModal } from '../ChangePasswordModal';
 import type { Capabilities } from '../../lib/permissions';
 
-interface NavItem { to: string; label: string; icon: ReactNode; show: (c: Capabilities) => boolean }
+interface NavItem { to: string; label: string; icon: ReactNode; show: (c: Capabilities) => boolean; badge?: 'requests' }
 const NAV: { group: string; items: NavItem[] }[] = [
   { group: 'Clubs', items: [
     { to: '/overview', label: 'All Clubs Overview', icon: <Layers className="h-[18px] w-[18px]" />, show: (c) => c.viewOverview },
@@ -43,6 +44,8 @@ const NAV: { group: string; items: NavItem[] }[] = [
     { to: '/exports', label: 'Export Center', icon: <Download className="h-[18px] w-[18px]" />, show: () => true },
   ] },
   { group: 'Administration', items: [
+    { to: '/requests', label: 'Access Requests', icon: <UserCheck className="h-[18px] w-[18px]" />, show: (c) => c.manageUsers, badge: 'requests' },
+    { to: '/club-setup', label: 'Categories & Staff', icon: <Layers className="h-[18px] w-[18px]" />, show: (c) => c.manageUsers },
     { to: '/admin', label: 'Settings', icon: <Settings className="h-[18px] w-[18px]" />, show: (c) => c.manageUsers || c.manageSeasons },
     { to: '/audit', label: 'Audit Log', icon: <History className="h-[18px] w-[18px]" />, show: (c) => c.viewAudit },
   ] },
@@ -54,6 +57,7 @@ export function AppLayout() {
   const [pwOpen, setPwOpen] = useState(false);
   const location = useLocation();
   const online = useOnline();
+  const pending = usePendingRequests(caps.manageUsers);
   useEffect(() => setMobileOpen(false), [location.pathname]);
 
   const sidebar = (
@@ -75,7 +79,8 @@ export function AppLayout() {
                 <NavLink key={i.to} to={i.to} end={i.to === '/'}
                   className={({ isActive }) => clsx('group mb-0.5 flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition',
                     isActive ? 'bg-brand-gold text-white shadow-md shadow-black/20' : 'hover:bg-white/5 hover:text-white')}>
-                  {i.icon}{i.label}
+                  {i.icon}<span className="flex-1">{i.label}</span>
+                  {i.badge === 'requests' && pending > 0 && <span className="rounded-full bg-brand-red px-2 py-0.5 text-[11px] font-bold text-white">{pending}</span>}
                 </NavLink>
               ))}
             </div>
@@ -108,6 +113,11 @@ export function AppLayout() {
       )}
       <div className="lg:pl-64">
         <TopBar onMenu={() => setMobileOpen(true)} />
+        {pending > 0 && location.pathname !== '/requests' && (
+          <NavLink to="/requests" className="flex items-center gap-2 bg-brand-gold px-4 py-2 text-sm font-semibold text-white">
+            <UserCheck className="h-4 w-4" /> {pending} access request{pending > 1 ? 's' : ''} waiting for your approval · طلبات دخول بانتظار موافقتك
+          </NavLink>
+        )}
         {!online && (
           <div className="bg-brand-red px-4 py-2 text-sm font-medium text-white">No internet connection – changes cannot be saved until the connection returns.</div>
         )}
@@ -266,3 +276,18 @@ function MobileNav() {
   );
 }
 
+
+/** Number of access requests waiting for the physician (refreshed every minute). */
+function usePendingRequests(enabled: boolean) {
+  const [n, setN] = useState(0);
+  useEffect(() => {
+    if (!enabled) return;
+    let alive = true;
+    const load = () => void listRegistrations('pending').then((r) => alive && setN(r.length)).catch(() => undefined);
+    load();
+    const t = setInterval(load, 60_000);
+    window.addEventListener('dsf-requests-changed', load);
+    return () => { alive = false; clearInterval(t); window.removeEventListener('dsf-requests-changed', load); };
+  }, [enabled]);
+  return n;
+}

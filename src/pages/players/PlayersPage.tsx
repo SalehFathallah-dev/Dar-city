@@ -19,6 +19,8 @@ export default function PlayersPage() {
   const [position, setPosition] = useState('');
   const [status, setStatus] = useState('active');
   const [season, setSeason] = useState('');
+  const [category, setCategory] = useState('');
+  const categories = useMemo(() => [...new Set(players.map((p) => p.team_category))].sort(), [players]);
   const [target, setTarget] = useState<{ p: Player; to: Player['status'] } | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -28,8 +30,9 @@ export default function PlayersPage() {
     if (position && p.position !== position) return false;
     if (status && p.status !== status) return false;
     if (season && p.season_id !== season) return false;
+    if (category && p.team_category !== category) return false;
     return true;
-  }), [players, q, position, status, season]);
+  }), [players, q, position, status, season, category]);
 
   const changeStatus = async () => {
     if (!target) return;
@@ -47,11 +50,12 @@ export default function PlayersPage() {
       <PageHeader title="Players" subtitle="Team roster and player registration" icon={<Users className="h-6 w-6" />}
         actions={caps.managePlayers && <Button icon={<UserPlus className="h-4 w-4" />} onClick={() => navigate('/players/new')}>Add Player</Button>} />
       <Card>
-        <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
           <SearchInput value={q} onChange={setQ} placeholder="Name, ID, jersey, nationality…" />
           <Select value={position} onChange={(e) => setPosition(e.target.value)} options={POSITIONS} placeholder="All positions" />
           <Select value={status} onChange={(e) => setStatus(e.target.value)} options={[{ value: 'active', label: 'Active' }, { value: 'inactive', label: 'Inactive' }, { value: 'archived', label: 'Archived' }]} placeholder="All statuses" />
           <Select value={season} onChange={(e) => setSeason(e.target.value)} options={seasons.map((s) => ({ value: s.id, label: `Season ${s.name}` }))} placeholder="All seasons" />
+          {categories.length > 1 && <Select value={category} onChange={(e) => setCategory(e.target.value)} options={categories} placeholder="All categories" />}
         </div>
         {loading ? <Spinner /> : !players.length ? (
           <EmptyState title="No players registered yet" description="Add the first player to start building the team medical record."

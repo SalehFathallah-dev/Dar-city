@@ -148,7 +148,7 @@ export interface DoseEntry {
 }
 export interface AdherenceRow extends DoseEntry { full_name: string; jersey_number: number | null; kind: string; name: string; dose: string | null }
 export interface TeamSummaryRow {
-  player_id: string; player_code: string; full_name: string; jersey_number: number | null; position: string;
+  player_id: string; player_code: string; full_name: string; jersey_number: number | null; position: string; team_category: string;
   availability: string; medical_status: string; restrictions: string | null; staff_notes: string | null; next_followup_date: string | null;
   rehab_phase: string | null; expected_return_date: string | null; open_injuries: number;
 }
@@ -161,3 +161,28 @@ export interface AthletePortal {
   doses: DoseEntry[];
 }
 export interface AthleteAccount { user_id: string; email: string; full_name: string; is_active: boolean; player_id: string }
+
+export interface ClubCategory { id: string; club_id: string; name: string; sort_order: number; is_active: boolean }
+export interface StaffMember {
+  id: string; club_id: string; full_name: string; app_role: 'head_coach' | 'team_manager' | 'assistant_medical_staff';
+  title: string | null; category: string | null; phone: string | null; email: string | null; notes: string | null;
+  profile_id: string | null; is_active: boolean; created_at: string;
+}
+export interface RegistrationRow {
+  id: string; created_at: string; status: 'pending' | 'approved' | 'rejected' | 'cancelled'; kind: 'athlete' | 'staff';
+  club_id: string; club_name: string; person_id: string; person_name: string; person_detail: string | null;
+  login: string; account_name: string; message: string | null; already_linked: boolean; decided_at: string | null; decision_note: string | null;
+}
+export interface MyRegistration { id: string; status: RegistrationRow['status']; kind: 'athlete' | 'staff'; club_name: string; person_name: string; decision_note: string | null; created_at: string }
+export interface RecoveryEpisode {
+  injury_id: string; injury_date: string; body_region: string; body_side: string | null; status: string;
+  expected_return_date: string | null; return_to_play_date: string | null; closed_date: string | null; days_out: number;
+  rehab: null | { current_phase: string; phase_number: number | null; phase_total: number; status: string; start_date: string; end_date: string | null;
+    sessions: number; last_session_date: string | null; phase_history: { phase: string; from: string }[] };
+  rtp: { decision: string; decision_date: string }[];
+}
+export interface RecoveryView {
+  player: { id: string; full_name: string; jersey_number: number | null; position: string; team_category: string };
+  availability: AthletePortal['availability'];
+  episodes: RecoveryEpisode[];
+}

@@ -3,7 +3,7 @@
 #  Phase A – existing single-club data → multi-club migration → integrity + RLS + club isolation tests
 #  Phase B – migration rollback keeps every record, and the migration can be re-applied
 #  Phase C – fresh install of every migration
-#  Phase D – athlete portal, prescriptions, dose log and staff summary security
+#  Phase D – athlete portal, prescriptions, dose log, staff summary, registration & recovery security
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 PGBIN="${PGBIN:-$(ls -d /usr/lib/postgresql/*/bin 2>/dev/null | sort -V | tail -1)}"
@@ -58,5 +58,6 @@ for f in "$M"/2026110200000{4,5}_*.sql; do "${PSQL[@]}" -f "$f"; done
 "${PSQL[@]}" -c "reset role"
 for f in "$M"/202611170000*.sql; do "${PSQL[@]}" -f "$f"; done
 ( cd "$ROOT/supabase/tests" && psql -h "$WORK" -p "$PORT" -U postgres -d postgres -v ON_ERROR_STOP=1 -q -o /dev/null -f athlete_tests.sql )
+( cd "$ROOT/supabase/tests" && psql -h "$WORK" -p "$PORT" -U postgres -d postgres -v ON_ERROR_STOP=1 -q -o /dev/null -f registration_tests.sql )
 stop_db
 echo "Database test suite completed successfully."

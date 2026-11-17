@@ -3,6 +3,7 @@ import type {
   BrandSettings, Club, ClubMember, Availability, AuditLog, Clearance, EmergencyContact, Examination, ExamFinding, Exposure, Followup, Injury,
   MedicalDocument, MedicalHistory, Player, Profile, RehabProgram, RehabSession, RtpAssessment, Season,
   TeamAvailabilityRow, Treatment, Prescription, AthletePortal, TeamSummaryRow, AdherenceRow, AthleteAccount,
+  ClubCategory, StaffMember, RegistrationRow, MyRegistration, RecoveryView,
 } from './types';
 import { ALLOWED_DOC_TYPES, APP, MAX_DOC_BYTES, MAX_PHOTO_BYTES } from './constants';
 
@@ -525,4 +526,71 @@ export async function createAthleteAccount(playerId: string, username: string, p
 }
 export async function resetUserPassword(userId: string, password: string) {
   return adminCall({ action: 'reset_password', user_id: userId, password });
+}
+
+// ---------------- Age categories ----------------
+export async function listCategories(clubId?: string): Promise<ClubCategory[]> {
+  const c = clubId ?? requireClub();
+  return unwrap(await supabase.from('club_categories').select('*').eq('club_id', c).order('sort_order').order('name'));
+}
+export async function saveCategory(c: Partial<ClubCategory>) {
+  const row = clean(c as Row);
+  if (c.id) { delete row.id; delete row.club_id; return unwrap(await supabase.from('club_categories').update(row).eq('id', c.id).select().single()); }
+  delete row.id;
+  return unwrap(await supabase.from('club_categories').insert({ ...row, club_id: requireClub() }).select().single());
+}
+export async function deleteCategory(id: string) {
+  const res = unwrap(await supabase.from('club_categories').delete().eq('id', id).select('id')) as unknown[];
+  if (!res.length) throw new Error('This category is used by players – move them to another category first.');
+}
+
+// ---------------- Staff register ----------------
+export async function listStaff(): Promise<StaffMember[]> {
+  return unwrap(await supabase.from('staff_members').select('*').eq('club_id', requireClub()).order('is_active', { ascending: false }).order('full_name'));
+}
+export async function saveStaff(s: Partial<StaffMember>): Promise<StaffMember> {
+  const row = clean({ ...s } as Row);
+  delete row.profile_id; delete row.created_at; delete row.club_id;
+  if (s.id) { delete row.id; return unwrap(await supabase.from('staff_members').update(row).eq('id', s.id).select().single()); }
+  delete row.id;
+  return unwrap(await supabase.from('staff_members').insert({ ...row, club_id: requireClub() }).select().single());
+}
+
+// ---------------- Self-registration ----------------
+export async function selfRegister(username: string, password: string, fullName: string) {
+  const { data, error } = await supabase.functions.invoke('self-register', { body: { username, password, full_name: fullName } });
+  if (error) {
+    let msg = error.message;
+    try { const b = await (error as { context?: Response }).context?.json(); if (b?.error) msg = b.error; } catch { /* ignore */ }
+    throw new Error(msg);
+  }
+  if (data?.error) throw new Error(data.error);
+}
+export async function registrationClubs(): Promise<{ id: string; name: string; short_name: string; city: string | null; country: string | null }[]> {
+  return unwrap(await supabase.rpc('registration_clubs'));
+}
+export async function registrationCategories(clubId: string): Promise<string[]> {
+  return (unwrap(await supabase.rpc('registration_categories', { p_club_id: clubId })) as { name: string }[]).map((r) => r.name);
+}
+export async function registrationPeople(clubId: string, kind: 'athlete' | 'staff', category?: string | null): Promise<{ id: string; full_name: string; detail: string | null }[]> {
+  return unwrap(await supabase.rpc('registration_people', { p_club_id: clubId, p_kind: kind, p_category: category || null }));
+}
+export async function submitRegistration(clubId: string, kind: 'athlete' | 'staff', personId: string, message?: string) {
+  return unwrap(await supabase.rpc('submit_registration', { p_club_id: clubId, p_kind: kind, p_person_id: personId, p_message: message ?? null }));
+}
+export async function myRegistration(): Promise<MyRegistration | null> {
+  const rows = unwrap(await supabase.rpc('my_registration')) as MyRegistration[];
+  return rows[0] ?? null;
+}
+export async function cancelMyRegistration() { unwrap(await supabase.rpc('cancel_my_registration')); }
+export async function listRegistrations(status: 'pending' | 'all' = 'pending'): Promise<RegistrationRow[]> {
+  return unwrap(await supabase.rpc('list_registrations', { p_status: status }));
+}
+export async function decideRegistration(id: string, approve: boolean, note?: string) {
+  unwrap(await supabase.rpc('decide_registration', { p_request_id: id, p_approve: approve, p_note: note ?? null }));
+}
+
+// ---------------- Recovery progress (staff) ----------------
+export async function getPlayerRecovery(playerId: string): Promise<RecoveryView> {
+  return unwrap(await supabase.rpc('get_player_recovery', { p_player_id: playerId }));
 }
