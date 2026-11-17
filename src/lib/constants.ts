@@ -14,7 +14,7 @@ export const BRAND = {
   white: '#FFFFFF',
 } as const;
 
-export type AppRole = 'super_admin' | 'team_physician' | 'assistant_medical_staff' | 'team_manager' | 'head_coach';
+export type AppRole = 'super_admin' | 'team_physician' | 'assistant_medical_staff' | 'team_manager' | 'head_coach' | 'athlete';
 
 export const ROLE_LABELS: Record<AppRole, string> = {
   super_admin: 'Super Administrator',
@@ -22,6 +22,7 @@ export const ROLE_LABELS: Record<AppRole, string> = {
   assistant_medical_staff: 'Assistant Medical Staff',
   team_manager: 'Team Manager',
   head_coach: 'Head Coach',
+  athlete: 'Athlete (player portal)',
 };
 
 export const POSITIONS = ['Point Guard', 'Shooting Guard', 'Small Forward', 'Power Forward', 'Center'] as const;
@@ -104,3 +105,12 @@ export const MAX_DOC_BYTES = 10 * 1024 * 1024;
 export const MAX_PHOTO_BYTES = 5 * 1024 * 1024;
 
 export const CLEARED_STATUSES = ['Cleared for Full Participation', 'Cleared with Restrictions'];
+
+export const PRESCRIPTION_KINDS = ['Supplement', 'Medication', 'Exercise', 'Treatment', 'Other'] as const;
+export const KIND_LABEL_AR: Record<string, string> = {
+  Supplement: 'مكمّل غذائي', Medication: 'دواء', Exercise: 'تمرين', Treatment: 'علاج', Other: 'أخرى',
+};
+export const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] as const;
+export const WEEKDAYS_AR = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'] as const;
+/** Usernames without "@" are mapped to this internal domain (no e-mail is ever sent). */
+export const USERNAME_DOMAIN = 'dsf.local';

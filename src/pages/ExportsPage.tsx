@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Database, Download, FileSpreadsheet, Lock, ShieldAlert, Upload } from 'lucide-react';
+import { Database, Download, FileSpreadsheet, Lock, ShieldAlert } from 'lucide-react';
 import * as api from '../lib/api';
 import { useAuth } from '../context/AuthContext';
 import { useReference } from '../context/ReferenceContext';
@@ -8,13 +8,14 @@ import { useAsync } from '../hooks/useAsync';
 import { SegmentedControl } from '../components/ui';
 import { useToast } from '../context/ToastContext';
 import { downloadBlob, downloadCsv, type CsvColumn } from '../lib/csv';
-import { BODY_REGIONS, INJURY_STATUSES, INJURY_TYPES } from '../lib/constants';
+import { APP, BODY_REGIONS, INJURY_STATUSES, INJURY_TYPES } from '../lib/constants';
 import { calculateAge, formatDate, formatDateTime, todayISO } from '../lib/format';
 import { daysLost, inRange, injuryAnalytics, incidencePer1000h } from '../lib/analytics';
 import type { Injury, Player } from '../lib/types';
 import { Button, Card, ConfirmDialog, Field, PageHeader, Select } from '../components/ui';
 import { PlayerPicker } from '../components/PlayerPicker';
 import { DateRangeFilter, useDateRange } from '../components/DateRangeFilter';
+import { supabase } from '../lib/supabase';
 
 const d = formatDate;
 const playerCols: CsvColumn<Player>[] = [
@@ -213,21 +214,17 @@ export default function ExportsPage() {
     setConfirmBackup(false);
     setBusy('backup');
     try {
-      const blob = await api.exportBackup();
-      await downloadBlob(blob, `Saleh_Fathullah_Medical_Backup_${stamp}.json`);
-      toast.success('Backup created. Keep it somewhere safe (Google Drive, computer…).');
-    } catch (e) { toast.error((e as Error).message); } finally { setBusy(null); }
-  };
-  const [restoreFile, setRestoreFile] = useState<File | null>(null);
-  const restore = async () => {
-    const f = restoreFile;
-    setRestoreFile(null);
-    if (!f) return;
-    setBusy('restore');
-    try {
-      const r = await api.restoreBackup(f);
-      toast.success(`Backup restored: ${r.records} records, ${r.files} files.`);
-      setTimeout(() => window.location.replace('/'), 800);
+      const tables = ['clubs', 'club_members', 'players', 'player_emergency_contacts', 'medical_histories', 'medical_examinations', 'examination_findings', 'injuries', 'injury_followups', 'treatments',
+        'rehabilitation_programs', 'rehabilitation_sessions', 'rtp_assessments', 'medical_clearances', 'player_availability', 'medical_documents', 'team_seasons', 'team_exposures'];
+      const out: Record<string, unknown> = { generated_at: new Date().toISOString(), application: `${APP.name} – ${APP.product}`, note: 'CONFIDENTIAL full medical backup. Document files are stored separately in Supabase Storage.' };
+      for (const t of tables) {
+        const { data, error } = await supabase.from(t).select('*').limit(100000); // RLS limits this to the physician's clubs
+        if (error) throw new Error(`${t}: ${error.message}`);
+        out[t] = data;
+      }
+      downloadBlob(new Blob([JSON.stringify(out, null, 2)], { type: 'application/json' }), `DarCity_Medical_Backup_${stamp}.json`);
+      void api.logEvent('BACKUP_EXPORT', 'all', null, { tables });
+      toast.success('Full medical backup downloaded. Store it in an encrypted location.');
     } catch (e) { toast.error((e as Error).message); } finally { setBusy(null); }
   };
 
@@ -262,24 +259,16 @@ export default function ExportsPage() {
         ))}
       </div>
       {caps.fullBackup && (
-        <Card className="mt-6 border-brand-red/30" title="Full Backup & Restore">
+        <Card className="mt-6 border-brand-red/30" title="Full Medical Backup (Team Physician only)">
           <div className="flex flex-wrap items-center gap-4">
             <ShieldAlert className="h-8 w-8 text-brand-red" />
-            <p className="flex-1 text-sm text-neutral-600">All records are stored <b>only on this phone</b>. Create a backup regularly (it includes every record, photo and document) and keep it in a safe place such as Google Drive. If the phone is lost or the app is removed, the backup is the only way to recover the data.</p>
-            <div className="flex flex-wrap gap-2">
-              <Button variant="danger" icon={<Database className="h-4 w-4" />} loading={busy === 'backup'} onClick={() => setConfirmBackup(true)}>Create Full Backup</Button>
-              <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-neutral-300 bg-white px-4 py-2 text-sm font-semibold text-brand-navy hover:bg-neutral-50">
-                <Upload className="h-4 w-4" />{busy === 'restore' ? 'Restoring…' : 'Restore Backup'}
-                <input type="file" accept="application/json,.json" className="hidden" onChange={(e) => { setRestoreFile(e.target.files?.[0] ?? null); e.target.value = ''; }} />
-              </label>
-            </div>
+            <p className="flex-1 text-sm text-neutral-600">Downloads every medical table as a single JSON file. This file contains all confidential medical data – store it only on an encrypted, access-controlled device. Supabase also performs automatic daily database backups.</p>
+            <Button variant="danger" icon={<Database className="h-4 w-4" />} loading={busy === 'backup'} onClick={() => setConfirmBackup(true)}>Download Full Backup</Button>
           </div>
         </Card>
       )}
-      <ConfirmDialog open={confirmBackup} title="Confidential backup" confirmLabel="Create" danger onConfirm={backup} onCancel={() => setConfirmBackup(false)}
-        message="The backup file contains the complete confidential medical database. Store it only in a private, secure location. Continue?" />
-      <ConfirmDialog open={!!restoreFile} title="Restore backup" confirmLabel="Replace all data" danger onConfirm={restore} onCancel={() => setRestoreFile(null)}
-        message={`All records currently on this phone will be REPLACED by the content of “${restoreFile?.name ?? ''}”. This cannot be undone. Continue?`} />
+      <ConfirmDialog open={confirmBackup} title="Confidential backup" confirmLabel="Download" danger onConfirm={backup} onCancel={() => setConfirmBackup(false)}
+        message="You are about to download the complete confidential medical database. This action is recorded in the audit log. Continue?" />
     </div>
   );
 }

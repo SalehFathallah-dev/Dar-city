@@ -10,10 +10,16 @@ export function capabilities(role: AppRole | null | undefined) {
   const assistant = r === 'assistant_medical_staff';
   const admin = r === 'super_admin';
   const clinical = physician || assistant;
+  const athlete = r === 'athlete';
+  const staff = r !== null && !athlete;
   return {
     role: r,
     isPhysician: physician,
     isAdmin: admin,
+    isAthlete: athlete,
+    isStaff: staff,
+    viewTeamSummary: staff,
+    managePrescriptions: physician,
     viewMedical: clinical,
     editMedical: physician,
     addFollowups: clinical,
@@ -22,7 +28,7 @@ export function capabilities(role: AppRole | null | undefined) {
     viewEmergencyContacts: physician || assistant || admin || r === 'team_manager',
     updateAvailability: physician,
     viewAudit: physician || admin,
-    manageUsers: admin,
+    manageUsers: admin || physician,
     manageSettings: admin || physician,
     manageSeasons: admin || physician,
     exportMedical: clinical,

@@ -11,7 +11,6 @@ import { BrowserRouter } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
 import { App as NativeApp } from '@capacitor/app';
 import App from './App';
-import { bootstrap } from './lib/api';
 import './index.css';
 
 const root = ReactDOM.createRoot(document.getElementById('root')!);
@@ -24,21 +23,10 @@ if (Capacitor.isNativePlatform()) {
   });
 }
 
-bootstrap()
-  .then(() => {
-    root.render(
-      <React.StrictMode>
-        <BrowserRouter>
-          <App />
-        </BrowserRouter>
-      </React.StrictMode>,
-    );
-  })
-  .catch((e: unknown) => {
-    root.render(
-      <div style={{ padding: 24, fontFamily: 'sans-serif' }}>
-        <h2>Unable to open the on-device database</h2>
-        <p>{e instanceof Error ? e.message : String(e)}</p>
-      </div>,
-    );
-  });
+root.render(
+  <React.StrictMode>
+    <BrowserRouter>
+      <App />
+    </BrowserRouter>
+  </React.StrictMode>,
+);

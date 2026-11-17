@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { Check, Eye, EyeOff, KeyRound, X } from 'lucide-react';
 import clsx from 'clsx';
-import { MIN_PASSWORD, useAuth } from '../context/AuthContext';
+import { supabase } from '../lib/supabase';
+import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { Button, Field, Input, Modal } from './ui';
 
 export const PASSWORD_RULES: { label: string; test: (p: string) => boolean }[] = [
-  { label: `At least ${MIN_PASSWORD} characters`, test: (p) => p.length >= MIN_PASSWORD },
+  { label: 'At least 8 characters · ٨ أحرف على الأقل', test: (p) => p.length >= 8 },
 ];
 export const passwordOk = (p: string) => PASSWORD_RULES.every((r) => r.test(p));
 
@@ -27,7 +28,7 @@ export function PasswordRules({ value }: { value: string }) {
 
 /** Lets the signed-in user change their own password (current password required). */
 export function ChangePasswordModal({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const { changePassword } = useAuth();
+  const { session } = useAuth();
   const toast = useToast();
   const [current, setCurrent] = useState('');
   const [pw, setPw] = useState('');
@@ -41,16 +42,22 @@ export function ChangePasswordModal({ open, onClose }: { open: boolean; onClose:
 
   const save = async () => {
     setErr(null);
+    const email = session?.user.email;
+    if (!email) return setErr('Your session has expired. Please sign in again.');
     if (!current) return setErr('Enter your current password.');
     if (!passwordOk(pw)) return setErr('The new password does not meet all the requirements.');
     if (pw !== pw2) return setErr('The new passwords do not match.');
     if (pw === current) return setErr('The new password must be different from the current one.');
     setSaving(true);
     try {
-      await changePassword(current, pw);
+      // Confirm the current password before allowing the change.
+      const check = await supabase.auth.signInWithPassword({ email, password: current });
+      if (check.error) { setErr('The current password is incorrect.'); return; }
+      const { error } = await supabase.auth.updateUser({ password: pw });
+      if (error) { setErr(error.message); return; }
       toast.success('Your password has been changed.');
       close();
-    } catch (e) { setErr((e as Error).message); } finally { setSaving(false); }
+    } finally { setSaving(false); }
   };
 
   const type = show ? 'text' : 'password';
@@ -58,7 +65,7 @@ export function ChangePasswordModal({ open, onClose }: { open: boolean; onClose:
     <Modal open={open} onClose={close} title="Change Password"
       footer={<><Button variant="secondary" onClick={close}>Cancel</Button><Button loading={saving} icon={<KeyRound className="h-4 w-4" />} onClick={save}>Change Password</Button></>}>
       <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); void save(); }}>
-        <p className="text-sm text-neutral-600">This password unlocks the app on this phone.</p>
+        <p className="text-sm text-neutral-600">Signed in as <b>{session?.user.email?.replace('@dsf.local', '')}</b></p>
         <Field label="Current password"><Input type={type} autoComplete="current-password" value={current} onChange={(e) => setCurrent(e.target.value)} /></Field>
         <Field label="New password"><Input type={type} autoComplete="new-password" value={pw} onChange={(e) => setPw(e.target.value)} /></Field>
         <PasswordRules value={pw} />

@@ -2,7 +2,7 @@ import type { AppRole } from './constants';
 
 export interface Profile {
   id: string; full_name: string; email: string | null; title: string | null;
-  role: AppRole | null; is_active: boolean; created_at: string;
+  role: AppRole | null; is_active: boolean; created_at: string; player_id?: string | null;
 }
 
 export interface Season { id: string; club_id: string; name: string; start_date: string; end_date: string; is_current: boolean; notes: string | null }
@@ -134,3 +134,30 @@ export interface Club {
 }
 export interface ClubMember { club_id: string; user_id: string; created_at: string }
 export interface BrandSettings { name: string; specialty: string; contact: string; logoPath: string; signaturePath: string }
+
+export interface Prescription {
+  id: string; club_id: string; player_id: string; injury_id: string | null;
+  kind: 'Medication' | 'Supplement' | 'Exercise' | 'Treatment' | 'Other'; name: string; dose: string | null; instructions: string | null;
+  schedule_times: string[]; days_of_week: number[]; start_date: string; end_date: string | null;
+  is_active: boolean; share_with_staff: boolean; created_at: string;
+}
+/** One expected (or logged) dose. status null = not confirmed yet. */
+export interface DoseEntry {
+  prescription_id: string; player_id: string; scheduled_date: string; scheduled_time: string;
+  status: 'taken' | 'skipped' | null; note: string | null; logged_at: string | null;
+}
+export interface AdherenceRow extends DoseEntry { full_name: string; jersey_number: number | null; kind: string; name: string; dose: string | null }
+export interface TeamSummaryRow {
+  player_id: string; player_code: string; full_name: string; jersey_number: number | null; position: string;
+  availability: string; medical_status: string; restrictions: string | null; staff_notes: string | null; next_followup_date: string | null;
+  rehab_phase: string | null; expected_return_date: string | null; open_injuries: number;
+}
+export interface AthletePortal {
+  player: { id: string; full_name: string; player_code: string; jersey_number: number | null; position: string; club_name: string; club_short_name: string; club_logo: string | null } | null;
+  availability: { availability: string; medical_status: string; restrictions: string | null; staff_notes: string | null; effective_date: string; next_followup_date: string | null } | null;
+  injuries: { id: string; injury_code: string; injury_date: string; body_region: string; body_side: string | null; injury_type: string; diagnosis: string | null; status: string; expected_return_date: string | null }[];
+  rehab: { id: string; program_code: string; current_phase: string; goals: string | null; exercises: string | null; training_load: string | null; start_date: string; status: string; body_region: string; injury_type: string }[];
+  prescriptions: Pick<Prescription, 'id' | 'kind' | 'name' | 'dose' | 'instructions' | 'schedule_times' | 'days_of_week' | 'start_date' | 'end_date'>[];
+  doses: DoseEntry[];
+}
+export interface AthleteAccount { user_id: string; email: string; full_name: string; is_active: boolean; player_id: string }

@@ -18,9 +18,10 @@ import {
 } from '../../components/ui';
 import { Timeline, type TimelineItem } from '../../components/Timeline';
 import { DocumentsPanel } from '../../components/DocumentsPanel';
+import { PrescriptionsPanel } from '../../components/PrescriptionsPanel';
 import { useReportPreview } from '../../components/PdfPreview';
 
-type TabId = 'overview' | 'personal' | 'history' | 'exams' | 'injuries' | 'treatments' | 'rehab' | 'clearance' | 'documents' | 'timeline';
+type TabId = 'overview' | 'personal' | 'program' | 'history' | 'exams' | 'injuries' | 'treatments' | 'rehab' | 'clearance' | 'documents' | 'timeline';
 
 export default function PlayerProfilePage() {
   const { id } = useParams<{ id: string }>();
@@ -63,6 +64,7 @@ export default function PlayerProfilePage() {
   const tabs: { id: TabId; label: string; count?: number }[] = [
     { id: 'overview', label: 'Overview' }, { id: 'personal', label: 'Personal Information' },
     ...(caps.viewMedical ? [
+      { id: 'program' as TabId, label: 'Programme & Supplements' },
       { id: 'history' as TabId, label: 'Medical History' }, { id: 'exams' as TabId, label: 'Medical Examinations', count: m?.exams.length },
       { id: 'injuries' as TabId, label: 'Injuries', count: m?.injuries.length }, { id: 'treatments' as TabId, label: 'Treatments', count: m?.treatments.length },
       { id: 'rehab' as TabId, label: 'Rehabilitation', count: m?.rehab.length }, { id: 'clearance' as TabId, label: 'Medical Clearance', count: m?.clearances.length },
@@ -178,6 +180,7 @@ export default function PlayerProfilePage() {
               )}
             </div>
           )}
+          {m && tab === 'program' && <PrescriptionsPanel playerId={p.id} clubId={p.club_id} injuries={m.injuries} />}
           {m && tab === 'history' && <HistoryTab playerId={p.id} histories={m.histories} onSaved={med.reload} />}
           {m && tab === 'exams' && (
             <Card title="Medical Examinations" actions={caps.editMedical && <Button size="sm" icon={<Plus className="h-4 w-4" />} onClick={() => navigate(`/examinations/new?player=${p.id}`)}>New Examination</Button>} padded={false}>

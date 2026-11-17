@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Building2, CalendarRange, Plus, Settings, ShieldCheck, Stethoscope, UserPlus } from 'lucide-react';
+import { Building2, CalendarRange, Plus, Settings, ShieldCheck, Stethoscope, UserPlus, Users } from 'lucide-react';
 import { useClub } from '../context/ClubContext';
 import { useBrand } from '../context/BrandContext';
 import { BrandLogo, ClubLogo } from '../components/Branding';
@@ -15,7 +15,9 @@ import { formatDate, formatDateTime } from '../lib/format';
 import type { Profile, Season } from '../lib/types';
 import { Badge, Button, Card, Checkbox, ErrorBlock, Field, Grid, Input, Modal, PageHeader, Select, Spinner, Table, Tabs, Td, Textarea } from '../components/ui';
 
-const ROLE_OPTIONS = (Object.keys(ROLE_LABELS) as AppRole[]).map((r) => ({ value: r, label: ROLE_LABELS[r] }));
+const ROLE_OPTIONS = (Object.keys(ROLE_LABELS) as AppRole[]).filter((r) => r !== 'athlete').map((r) => ({ value: r, label: ROLE_LABELS[r] }));
+/** Player accounts are created from the player's profile (Programme & Supplements tab). */
+const STAFF_ROLE_OPTIONS = ROLE_OPTIONS.filter((r) => r.value !== 'super_admin');
 
 export default function AdminPage() {
   const { caps } = useAuth();
@@ -43,7 +45,8 @@ export default function AdminPage() {
 function UsersTab() {
   const { profile: me } = useAuth();
   const toast = useToast();
-  const users = useAsync(() => api.listProfiles(), []);
+  // Player (athlete) accounts are managed from each player's profile.
+  const users = useAsync(async () => (await api.listProfiles()).filter((u) => u.role !== 'athlete'), []);
   const members = useAsync(() => api.listClubMembers(), []);
   const { clubs } = useClub();
   const clubsOf = (uid: string) => (members.data ?? []).filter((m) => m.user_id === uid).map((m) => clubs.find((c) => c.id === m.club_id)?.short_name).filter(Boolean);
@@ -56,7 +59,7 @@ function UsersTab() {
           {(users.data ?? []).map((u) => (
             <tr key={u.id}>
               <Td className="font-semibold">{u.full_name}{u.title && <span className="block text-xs font-normal text-neutral-500">{u.title}</span>}</Td>
-              <Td>{u.email}</Td>
+              <Td>{u.email?.replace('@dsf.local', '')}</Td>
               <Td>{u.role ? <Badge color={u.role === 'team_physician' ? 'orange' : u.role === 'super_admin' ? 'purple' : 'beige'}>{ROLE_LABELS[u.role]}</Badge> : <Badge color="blue">No role</Badge>}</Td>
               <Td className="text-xs">{u.role === 'super_admin' ? 'All clubs' : clubsOf(u.id).join(', ') || <span className="text-brand-red">None</span>}</Td>
               <Td>{u.is_active ? <Badge color="green">Active</Badge> : <Badge color="red">Inactive / pending</Badge>}</Td>
@@ -92,7 +95,7 @@ function EditUserModal({ user, memberOf, onClose, onSaved }: { user: Profile; me
   return (
     <Modal open onClose={onClose} title="Manage User" footer={<><Button variant="secondary" onClick={onClose}>Cancel</Button><Button loading={saving} onClick={save}>Save</Button></>}>
       <div className="space-y-4">
-        <p className="text-sm text-neutral-500">{user.email}</p>
+        <p className="text-sm text-neutral-500">{user.email?.replace('@dsf.local', '')}</p>
         <Field label="Full name"><Input value={f.full_name} onChange={(e) => setF({ ...f, full_name: e.target.value })} /></Field>
         <Field label="Title"><Input value={f.title} onChange={(e) => setF({ ...f, title: e.target.value })} /></Field>
         <Field label="Role"><Select value={f.role} onChange={(e) => setF({ ...f, role: e.target.value })} options={ROLE_OPTIONS} placeholder="No role" /></Field>
@@ -114,26 +117,27 @@ function EditUserModal({ user, memberOf, onClose, onSaved }: { user: Profile; me
 
 function CreateUserModal({ onClose, onSaved }: { onClose: () => void; onSaved: () => void }) {
   const toast = useToast();
+  const { caps } = useAuth();
   const { clubs, clubId } = useClub();
   const [f, setF] = useState({ email: '', full_name: '', title: '', role: 'head_coach', password: '' });
   const [clubIds, setClubIds] = useState<string[]>(clubId ? [clubId] : []);
   const [saving, setSaving] = useState(false);
   const save = async () => {
-    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(f.email)) return toast.error('Enter a valid e-mail');
+    if (!/^[a-z0-9._%+-]+(@[a-z0-9.-]+\.[a-z]{2,})?$/i.test(f.email.trim())) return toast.error('Enter a username (letters/numbers) or an e-mail');
     if (f.full_name.trim().length < 2) return toast.error('Enter the full name');
-    if (f.password.length < 10 || !/[A-Z]/.test(f.password) || !/[0-9]/.test(f.password)) return toast.error('Temporary password: at least 10 characters with an upper-case letter and a number');
+    if (f.password.length < 8) return toast.error('Temporary password: at least 8 characters');
     setSaving(true);
     try { await api.adminCreateUser({ ...f, club_ids: clubIds }); toast.success('User created. Share the temporary password securely and ask them to change it.'); onSaved(); }
-    catch (e) { toast.error(`${(e as Error).message}. If the "admin-users" Edge Function is not deployed, create the user in the Supabase dashboard and assign the role here.`); }
+    catch (e) { toast.error((e as Error).message); }
     finally { setSaving(false); }
   };
   return (
     <Modal open onClose={onClose} title="Create User" footer={<><Button variant="secondary" onClick={onClose}>Cancel</Button><Button loading={saving} onClick={save}>Create</Button></>}>
       <div className="space-y-4">
-        <Field label="E-mail" required><Input type="email" value={f.email} onChange={(e) => setF({ ...f, email: e.target.value })} /></Field>
+        <Field label="Username or e-mail" required hint="e.g. coach.omar – they sign in with this"><Input autoCapitalize="none" value={f.email} onChange={(e) => setF({ ...f, email: e.target.value.trim() })} /></Field>
         <Field label="Full name" required><Input value={f.full_name} onChange={(e) => setF({ ...f, full_name: e.target.value })} /></Field>
         <Field label="Title"><Input value={f.title} onChange={(e) => setF({ ...f, title: e.target.value })} /></Field>
-        <Field label="Role" required><Select value={f.role} onChange={(e) => setF({ ...f, role: e.target.value })} options={ROLE_OPTIONS} /></Field>
+        <Field label="Role" required><Select value={f.role} onChange={(e) => setF({ ...f, role: e.target.value })} options={caps.isAdmin ? ROLE_OPTIONS : STAFF_ROLE_OPTIONS} /></Field>
         <Field label="Temporary password" required><Input type="password" autoComplete="new-password" value={f.password} onChange={(e) => setF({ ...f, password: e.target.value })} /></Field>
         {f.role !== 'super_admin' && (
           <div>
@@ -211,21 +215,24 @@ function SecurityTab() {
   const { profile } = useAuth();
   return (
     <div className="grid gap-4 lg:grid-cols-2">
-      <Card title="Privacy & Security">
+      <Card title="Access Control Model">
         <ul className="space-y-2 text-sm text-neutral-700">
-          <li className="flex gap-2"><ShieldCheck className="h-4 w-4 shrink-0 text-emerald-600" />All records, photos and documents are stored only on this phone, inside the app's private storage. Nothing is sent to any server.</li>
-          <li className="flex gap-2"><ShieldCheck className="h-4 w-4 shrink-0 text-emerald-600" />The app is protected by your password and locks automatically after 15 minutes of inactivity.</li>
-          <li className="flex gap-2"><ShieldCheck className="h-4 w-4 shrink-0 text-emerald-600" />All changes are recorded in the audit log with previous and updated values.</li>
+          <li className="flex gap-2"><ShieldCheck className="h-4 w-4 shrink-0 text-emerald-600" />Every table is protected by PostgreSQL Row Level Security – permissions are enforced by the database, not the browser.</li>
+          <li className="flex gap-2"><ShieldCheck className="h-4 w-4 shrink-0 text-emerald-600" />Team Physician: full clinical access. Assistant Medical Staff: read + add follow-ups, treatments, rehab sessions and documents.</li>
+          <li className="flex gap-2"><ShieldCheck className="h-4 w-4 shrink-0 text-emerald-600" />Team Manager & Head Coach: roster and approved availability only (no diagnoses, medications or clinical notes).</li>
+          <li className="flex gap-2"><ShieldCheck className="h-4 w-4 shrink-0 text-emerald-600" />Documents and photos are in private storage buckets and opened through short-lived signed links.</li>
+          <li className="flex gap-2"><ShieldCheck className="h-4 w-4 shrink-0 text-emerald-600" />All changes are recorded in the audit log with previous and updated values. Sessions end after 30 minutes of inactivity.</li>
         </ul>
       </Card>
       <Card title="Backup Strategy">
         <ul className="space-y-2 text-sm text-neutral-700">
-          <li><b>Important:</b> uninstalling the app or losing the phone deletes the data. Create a full backup regularly from <b>Export Center → Full Backup &amp; Restore</b> and keep it in Google Drive or on a computer.</li>
-          <li><b>New phone:</b> install the app, create a password, then use <b>Restore Backup</b>.</li>
+          <li><b>Automatic:</b> Supabase performs daily database backups (Point-in-Time Recovery is available on paid plans).</li>
+          <li><b>Manual:</b> The Team Physician can download a full JSON backup from the Export Center.</li>
           <li><b>Records are archived, not deleted:</b> players, examinations, injuries and documents are archived and remain recoverable.</li>
         </ul>
         <p className="mt-4 text-xs text-neutral-500">Signed in as {profile?.full_name} · {formatDateTime(new Date().toISOString())}</p>
       </Card>
+      <Card title="Users and roles" className="lg:col-span-2"><p className="text-sm text-neutral-600"><Users className="mr-2 inline h-4 w-4" />New accounts are inactive with no role until a Super Administrator approves them. Users cannot change their own role.</p></Card>
     </div>
   );
 }

@@ -2,10 +2,12 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import clsx from 'clsx';
 import {
+  ClipboardCheck,
   Activity, BarChart3, CalendarCheck2, ClipboardList, Download, FileStack, FileText, HeartPulse, LayoutDashboard,
   LogOut, Menu, Plus, Search, Settings, Stethoscope, UserPlus, Users, X, Zap, History, BadgeCheck, Footprints, Layers, Shield, KeyRound,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { useOnline } from '../../hooks/useOnline';
 import { useReference } from '../../context/ReferenceContext';
 import { ROLE_LABELS } from '../../lib/constants';
 import { Button, Logo, PlayerAvatar } from '../ui';
@@ -23,6 +25,7 @@ const NAV: { group: string; items: NavItem[] }[] = [
   ] },
   { group: 'Club Dashboard', items: [
     { to: '/', label: 'Dashboard', icon: <LayoutDashboard className="h-[18px] w-[18px]" />, show: () => true },
+    { to: '/team-status', label: 'Team Status & Adherence', icon: <ClipboardCheck className="h-[18px] w-[18px]" />, show: (c) => c.viewTeamSummary },
     { to: '/availability', label: 'Player Availability', icon: <CalendarCheck2 className="h-[18px] w-[18px]" />, show: () => true },
     { to: '/players', label: 'Players', icon: <Users className="h-[18px] w-[18px]" />, show: () => true },
   ] },
@@ -50,6 +53,7 @@ export function AppLayout() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [pwOpen, setPwOpen] = useState(false);
   const location = useLocation();
+  const online = useOnline();
   useEffect(() => setMobileOpen(false), [location.pathname]);
 
   const sidebar = (
@@ -104,6 +108,9 @@ export function AppLayout() {
       )}
       <div className="lg:pl-64">
         <TopBar onMenu={() => setMobileOpen(true)} />
+        {!online && (
+          <div className="bg-brand-red px-4 py-2 text-sm font-medium text-white">No internet connection – changes cannot be saved until the connection returns.</div>
+        )}
         <main className="mx-auto max-w-7xl px-4 pb-28 pt-6 sm:px-6 lg:px-8 lg:pb-12">
           <Outlet />
         </main>
@@ -236,7 +243,7 @@ function MobileNav() {
   const { caps } = useAuth();
   const items = [
     { to: '/', label: 'Home', icon: <LayoutDashboard className="h-5 w-5" /> },
-    { to: '/availability', label: 'Availability', icon: <CalendarCheck2 className="h-5 w-5" /> },
+    { to: '/team-status', label: 'Team', icon: <ClipboardCheck className="h-5 w-5" /> },
     ...(caps.editMedical ? [{ to: '/injuries/new', label: 'Injury', icon: <Plus className="h-6 w-6" />, primary: true }] : []),
     caps.viewMedical ? { to: '/injuries', label: 'Injuries', icon: <HeartPulse className="h-5 w-5" /> } : { to: '/reports', label: 'Reports', icon: <FileText className="h-5 w-5" /> },
     { to: '/players', label: 'Players', icon: <Users className="h-5 w-5" /> },

@@ -8,9 +8,13 @@ import { BrandProvider } from './context/BrandContext';
 import NoClubPage from './pages/clubs/NoClubPage';
 import { AppLayout } from './components/layout/AppLayout';
 import { Spinner } from './components/ui';
+import { isSupabaseConfigured } from './lib/supabase';
 import type { Capabilities } from './lib/permissions';
 import LoginPage from './pages/LoginPage';
+import SetupRequired from './pages/SetupRequired';
 import PendingAccess from './pages/PendingAccess';
+
+const AthletePortalPage = lazy(() => import('./pages/athlete/AthletePortalPage'));
 
 const Dashboard = lazy(() => import('./pages/Dashboard'));
 const PlayersPage = lazy(() => import('./pages/players/PlayersPage'));
@@ -35,7 +39,9 @@ const ExportsPage = lazy(() => import('./pages/ExportsPage'));
 const AnalyticsPage = lazy(() => import('./pages/AnalyticsPage'));
 const AdminPage = lazy(() => import('./pages/AdminPage'));
 const AuditPage = lazy(() => import('./pages/AuditPage'));
+const ResetPasswordPage = lazy(() => import('./pages/ResetPasswordPage'));
 const OverviewPage = lazy(() => import('./pages/OverviewPage'));
+const TeamStatusPage = lazy(() => import('./pages/TeamStatusPage'));
 const ClubsPage = lazy(() => import('./pages/clubs/ClubsPage'));
 const ClubFormPage = lazy(() => import('./pages/clubs/ClubFormPage'));
 const ClubProfilePage = lazy(() => import('./pages/clubs/ClubProfilePage'));
@@ -48,9 +54,18 @@ function Guard({ need, children }: { need?: (c: Capabilities) => boolean; childr
 
 function Shell() {
   const { session, profile, loading } = useAuth();
-  if (loading) return <div className="flex min-h-screen items-center justify-center bg-brand-navy"><Spinner label="Loading…" /></div>;
-  if (!session) return <LoginPage />;
+  if (loading) return <div className="flex min-h-screen items-center justify-center bg-brand-navy"><Spinner label="Loading secure session…" /></div>;
+  if (!session) {
+    return (
+      <Routes>
+        <Route path="/reset-password" element={<Suspense fallback={<Spinner />}><ResetPasswordPage /></Suspense>} />
+        <Route path="*" element={<LoginPage />} />
+      </Routes>
+    );
+  }
   if (!profile?.is_active || !profile.role) return <PendingAccess />;
+  // Players only ever see their own portal (no clubs, no team data).
+  if (profile.role === 'athlete') return <Suspense fallback={<Spinner />}><AthletePortalPage /></Suspense>;
   return (
     <BrandProvider>
       <ClubProvider>
@@ -71,6 +86,7 @@ function ClubScopedApp() {
     <ReferenceProvider key={clubId}>
       <Suspense fallback={<Spinner />}>
         <Routes>
+          <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route element={<AppLayout />}>
             <Route path="overview" element={<Guard need={(c) => c.viewOverview}><OverviewPage /></Guard>} />
             <Route path="clubs" element={<ClubsPage />} />
@@ -78,6 +94,7 @@ function ClubScopedApp() {
             <Route path="clubs/:id" element={<ClubProfilePage />} />
             <Route path="clubs/:id/edit" element={<Guard need={(c) => c.manageClubs}><ClubFormPage /></Guard>} />
             <Route index element={<Dashboard />} />
+            <Route path="team-status" element={<Guard need={(c) => c.viewTeamSummary}><TeamStatusPage /></Guard>} />
             <Route path="players" element={<PlayersPage />} />
             <Route path="players/new" element={<Guard need={(c) => c.managePlayers}><PlayerFormPage /></Guard>} />
             <Route path="players/:id" element={<PlayerProfilePage />} />
@@ -112,6 +129,7 @@ function ClubScopedApp() {
 }
 
 export default function App() {
+  if (!isSupabaseConfigured) return <SetupRequired />;
   return (
     <ToastProvider>
       <AuthProvider>

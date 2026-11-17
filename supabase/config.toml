@@ -1,0 +1,35 @@
+# Minimal Supabase CLI configuration for local development (`supabase start`).
+project_id = "dar-city-medical"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public"]
+max_rows = 5000
+
+[db]
+port = 54322
+major_version = 15
+
+[studio]
+enabled = true
+port = 54323
+
+[auth]
+enabled = true
+site_url = "http://localhost:5173"
+additional_redirect_urls = ["http://localhost:5173/reset-password"]
+# Staff accounts are created by the administrator – public sign-up is disabled.
+enable_signup = false
+jwt_expiry = 3600
+
+[auth.email]
+enable_signup = false
+enable_confirmations = false
+
+[storage]
+enabled = true
+file_size_limit = "10MiB"
+
+[functions.admin-users]
+verify_jwt = true
