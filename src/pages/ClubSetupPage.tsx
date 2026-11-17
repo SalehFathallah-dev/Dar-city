@@ -87,7 +87,7 @@ function StaffCard() {
   const rows = list.data ?? [];
   return (
     <Card title={<span className="flex items-center gap-2"><Users className="h-5 w-5 text-brand-gold" /> Staff register</span>} padded={false}
-      actions={<Button size="sm" icon={<Plus className="h-4 w-4" />} onClick={() => setEdit({ app_role: 'head_coach', is_active: true })}>Add staff</Button>}>
+      actions={<Button size="sm" icon={<Plus className="h-4 w-4" />} onClick={() => { void cats.reload(); setEdit({ app_role: 'head_coach', is_active: true }); }}>Add staff</Button>}>
       {list.loading ? <Spinner /> : list.error ? <ErrorBlock message={list.error} /> : rows.length === 0 ? (
         <div className="p-5"><EmptyState title="No staff yet" description="Add coaches, managers, physiotherapists… They can then create an account in the app, choose their name and you approve them." /></div>
       ) : (
@@ -98,7 +98,7 @@ function StaffCard() {
               <Td><Badge color={s.app_role === 'assistant_medical_staff' ? 'orange' : 'beige'}>{ROLE_LABELS[s.app_role]}</Badge></Td>
               <Td>{s.category ?? 'All'}</Td>
               <Td>{s.profile_id ? <Badge color="green">Linked</Badge> : <span className="text-xs text-neutral-500">Not registered yet</span>}</Td>
-              <Td><Button size="sm" variant="ghost" icon={<Pencil className="h-4 w-4" />} onClick={() => setEdit(s)}>Edit</Button></Td>
+              <Td><Button size="sm" variant="ghost" icon={<Pencil className="h-4 w-4" />} onClick={() => { void cats.reload(); setEdit(s); }}>Edit</Button></Td>
             </tr>
           ))}
         </Table></div>
