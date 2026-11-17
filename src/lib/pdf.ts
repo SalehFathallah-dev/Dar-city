@@ -5,10 +5,10 @@ import { getReportBrand, getReportClub } from './reportContext';
 import type { Club } from './types';
 
 // Medical brand palette (navy & gold)
-const NAVY: [number, number, number] = [20, 35, 71];
-const GOLD: [number, number, number] = [154, 118, 52];
-const GOLD_LIGHT: [number, number, number] = [201, 168, 102];
-const CREAM: [number, number, number] = [247, 243, 234];
+const NAVY: [number, number, number] = [24, 42, 92];
+const GOLD: [number, number, number] = [30, 127, 194];
+const GOLD_LIGHT: [number, number, number] = [77, 182, 230];
+const CREAM: [number, number, number] = [242, 246, 251];
 const RED: [number, number, number] = [192, 40, 58];
 const BLACK: [number, number, number] = [20, 24, 36];
 const GREY: [number, number, number] = [105, 110, 122];
@@ -255,7 +255,7 @@ export class ReportBuilder {
     const d = this.doc;
     const color: [number, number, number] = tone === 'green' ? [22, 130, 70] : tone === 'red' ? RED : ORANGE;
     d.setDrawColor(...color); d.setLineWidth(0.6);
-    d.setFillColor(252, 250, 245);
+    d.setFillColor(246, 249, 253);
     d.roundedRect(MARGIN, this.y, CONTENT_W, 13, 1.5, 1.5, 'FD');
     d.setFont('helvetica', 'bold'); d.setFontSize(7.2); d.setTextColor(...GREY);
     d.text(label.toUpperCase(), MARGIN + 4, this.y + 4.8);

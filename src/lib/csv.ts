@@ -1,3 +1,5 @@
+import { saveFile } from './native';
+
 /** UTF-8 CSV generation compatible with Microsoft Excel (BOM + CRLF + RFC 4180 quoting). */
 
 export interface CsvColumn<T> { header: string; value: (row: T) => unknown }
@@ -17,15 +19,12 @@ export function toCsv<T>(rows: T[], columns: CsvColumn<T>[]): string {
   return '﻿' + lines.join('\r\n') + '\r\n';
 }
 
-export function downloadBlob(blob: Blob, filename: string) {
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 2000);
+/** Downloads (browser) or saves/shares (Android app) a file. */
+export function downloadBlob(blob: Blob, filename: string): Promise<void> {
+  return saveFile(blob, filename).catch((e: unknown) => {
+    // The share sheet being dismissed is not an error.
+    if (!/cancel/i.test(String((e as Error)?.message ?? e))) alert(`Unable to save the file: ${(e as Error)?.message ?? e}`);
+  });
 }
 
 export function downloadCsv<T>(filename: string, rows: T[], columns: CsvColumn<T>[]) {

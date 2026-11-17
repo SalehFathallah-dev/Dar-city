@@ -12,7 +12,7 @@ import { ClubLogo } from '../../components/Branding';
 
 const SPORTS = ['Basketball', 'Football', 'Volleyball', 'Handball', 'Athletics', 'Rugby', 'Other'];
 const empty = {
-  name: '', short_name: '', player_id_prefix: '', country: 'Tanzania', city: '', sport: 'Basketball', competition_category: 'Senior Men', league: '',
+  name: '', short_name: '', player_id_prefix: '', country: 'Libya', city: '', sport: 'Basketball', competition_category: 'Senior Men', league: '',
   current_season: '', contact_person: '', phone: '', email: '', address: '', medical_notes: '', registration_date: todayISO(), status: 'active' as Club['status'],
 };
 

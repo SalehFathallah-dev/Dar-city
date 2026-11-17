@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Building2, CalendarRange, Plus, Settings, ShieldCheck, Stethoscope, UserPlus, Users } from 'lucide-react';
+import { Building2, CalendarRange, Plus, Settings, ShieldCheck, Stethoscope, UserPlus } from 'lucide-react';
 import { useClub } from '../context/ClubContext';
 import { useBrand } from '../context/BrandContext';
 import { BrandLogo, ClubLogo } from '../components/Branding';
@@ -211,24 +211,21 @@ function SecurityTab() {
   const { profile } = useAuth();
   return (
     <div className="grid gap-4 lg:grid-cols-2">
-      <Card title="Access Control Model">
+      <Card title="Privacy & Security">
         <ul className="space-y-2 text-sm text-neutral-700">
-          <li className="flex gap-2"><ShieldCheck className="h-4 w-4 shrink-0 text-emerald-600" />Every table is protected by PostgreSQL Row Level Security – permissions are enforced by the database, not the browser.</li>
-          <li className="flex gap-2"><ShieldCheck className="h-4 w-4 shrink-0 text-emerald-600" />Team Physician: full clinical access. Assistant Medical Staff: read + add follow-ups, treatments, rehab sessions and documents.</li>
-          <li className="flex gap-2"><ShieldCheck className="h-4 w-4 shrink-0 text-emerald-600" />Team Manager & Head Coach: roster and approved availability only (no diagnoses, medications or clinical notes).</li>
-          <li className="flex gap-2"><ShieldCheck className="h-4 w-4 shrink-0 text-emerald-600" />Documents and photos are in private storage buckets and opened through short-lived signed links.</li>
-          <li className="flex gap-2"><ShieldCheck className="h-4 w-4 shrink-0 text-emerald-600" />All changes are recorded in the audit log with previous and updated values. Sessions end after 30 minutes of inactivity.</li>
+          <li className="flex gap-2"><ShieldCheck className="h-4 w-4 shrink-0 text-emerald-600" />All records, photos and documents are stored only on this phone, inside the app's private storage. Nothing is sent to any server.</li>
+          <li className="flex gap-2"><ShieldCheck className="h-4 w-4 shrink-0 text-emerald-600" />The app is protected by your password and locks automatically after 15 minutes of inactivity.</li>
+          <li className="flex gap-2"><ShieldCheck className="h-4 w-4 shrink-0 text-emerald-600" />All changes are recorded in the audit log with previous and updated values.</li>
         </ul>
       </Card>
       <Card title="Backup Strategy">
         <ul className="space-y-2 text-sm text-neutral-700">
-          <li><b>Automatic:</b> Supabase performs daily database backups (Point-in-Time Recovery is available on paid plans).</li>
-          <li><b>Manual:</b> The Team Physician can download a full JSON backup from the Export Center.</li>
+          <li><b>Important:</b> uninstalling the app or losing the phone deletes the data. Create a full backup regularly from <b>Export Center → Full Backup &amp; Restore</b> and keep it in Google Drive or on a computer.</li>
+          <li><b>New phone:</b> install the app, create a password, then use <b>Restore Backup</b>.</li>
           <li><b>Records are archived, not deleted:</b> players, examinations, injuries and documents are archived and remain recoverable.</li>
         </ul>
         <p className="mt-4 text-xs text-neutral-500">Signed in as {profile?.full_name} · {formatDateTime(new Date().toISOString())}</p>
       </Card>
-      <Card title="Users and roles" className="lg:col-span-2"><p className="text-sm text-neutral-600"><Users className="mr-2 inline h-4 w-4" />New accounts are inactive with no role until a Super Administrator approves them. Users cannot change their own role.</p></Card>
     </div>
   );
 }

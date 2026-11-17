@@ -168,7 +168,7 @@ function FollowupsTab({ followups, onAdd, onPdf }: { followups: Followup[]; onAd
             <ResponsiveContainer width="100%" height={220}>
               <LineChart data={chart} margin={{ left: -20, right: 10, top: 10 }}>
                 <CartesianGrid stroke="#eee" vertical={false} /><XAxis dataKey="date" tick={{ fontSize: 11 }} /><YAxis domain={[0, 10]} ticks={[0, 2, 4, 6, 8, 10]} tick={{ fontSize: 11 }} />
-                <Tooltip /><Line dataKey="pain" name="Pain (0–10)" stroke="#C0283A" strokeWidth={3} dot={{ r: 5, fill: '#9A7634' }} />
+                <Tooltip /><Line dataKey="pain" name="Pain (0–10)" stroke="#C0283A" strokeWidth={3} dot={{ r: 5, fill: '#1E7FC2' }} />
               </LineChart>
             </ResponsiveContainer>
           ) : <EmptyState title="No follow-ups yet" />}

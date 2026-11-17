@@ -6,7 +6,7 @@ import { initials } from '../lib/format';
 import { useEffect, useState } from 'react';
 import { resolveClubLogo } from '../lib/api';
 
-/** A. Medical brand logo – Dr. Faraj Lashika (never replaced by a club logo). */
+/** A. Medical brand logo – Dr. Saleh Fathullah (never replaced by a club logo). */
 export function BrandLogo({ height = 48, className }: { height?: number; className?: string }) {
   const { logoUrl, brand } = useBrand();
   return <img src={logoUrl} alt={`${brand.name} – ${brand.specialty}`} style={{ height }} className={clsx('w-auto max-w-full select-none object-contain', className)} draggable={false} />;

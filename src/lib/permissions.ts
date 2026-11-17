@@ -23,7 +23,7 @@ export function capabilities(role: AppRole | null | undefined) {
     updateAvailability: physician,
     viewAudit: physician || admin,
     manageUsers: admin,
-    manageSettings: admin,
+    manageSettings: admin || physician,
     manageSeasons: admin || physician,
     exportMedical: clinical,
     fullBackup: physician,

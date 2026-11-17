@@ -79,7 +79,7 @@ export function formatBytes(n: number): string {
 
 export function referenceNumber(prefix: string, date = new Date()): string {
   const rand = Math.random().toString(36).slice(2, 6).toUpperCase();
-  return `DCB-${prefix}-${date.getFullYear()}${pad(date.getMonth() + 1)}${pad(date.getDate())}-${rand}`;
+  return `DSF-${prefix}-${date.getFullYear()}${pad(date.getMonth() + 1)}${pad(date.getDate())}-${rand}`;
 }
 
 export function initials(name: string): string {

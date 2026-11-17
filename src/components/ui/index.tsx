@@ -149,7 +149,7 @@ export function PainScale({ value, onChange }: { value: number | null; onChange:
         <button type="button" key={n} onClick={() => onChange(n)} aria-label={`Pain ${n}`}
           className={clsx('h-9 w-9 rounded-lg border text-sm font-bold transition',
             value === n ? 'border-transparent text-white' : 'border-neutral-300 bg-white text-neutral-700 hover:border-brand-gold')}
-          style={value === n ? { background: n <= 3 ? '#16a34a' : n <= 6 ? '#9A7634' : '#C0283A' } : undefined}>
+          style={value === n ? { background: n <= 3 ? '#16a34a' : n <= 6 ? '#1E7FC2' : '#C0283A' } : undefined}>
           {n}
         </button>
       ))}
@@ -345,6 +345,6 @@ export function PlayerAvatar({ name, photoPath, size = 40, className }: { name: 
 }
 
 /** Official medical brand logo (static default – used before sign-in). */
-export function Logo({ size = 40, className, mark }: { size?: number; className?: string; mark?: boolean }) {
-  return <img src={mark ? '/brand/medical-mark.png' : '/brand/medical-logo.png'} alt="Dr. Faraj Lashika – Orthopedic & Sports Medicine" style={{ height: size }} className={clsx('w-auto max-w-full select-none object-contain', className)} draggable={false} />;
+export function Logo({ size = 40, className, mark, tall }: { size?: number; className?: string; mark?: boolean; tall?: boolean }) {
+  return <img src={mark ? '/brand/medical-mark.png' : tall ? '/brand/medical-logo.png' : '/brand/medical-logo-wide.png'} alt="Dr. Saleh Fathullah – Orthopedic & Sports Medicine" style={{ height: size }} className={clsx('w-auto max-w-full select-none object-contain', className)} draggable={false} />;
 }

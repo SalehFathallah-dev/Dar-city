@@ -1,15 +1,15 @@
 export const APP = {
-  name: 'DR. FARAJ LASHIKA – ORTHOPEDIC & SPORTS MEDICINE',
-  product: 'Multi-Club Sports Medical Management System',
-  physician: 'Dr. Faraj Lashika',
-  specialty: 'Orthopedic & Sports Medicine',
+  name: 'DR. SALEH FATHULLAH – ORTHOPEDIC & SPORTS MEDICINE',
+  product: 'Orthopedic & Sports Injuries Medical System',
+  physician: 'Dr. Saleh Fathullah',
+  specialty: 'Orthopedic Surgery & Sports Injuries',
 } as const;
 
 export const BRAND = {
-  navy: '#142347',
-  gold: '#9A7634',
-  goldLight: '#C9A866',
-  cream: '#F7F3EA',
+  navy: '#182A5C',
+  gold: '#1E7FC2',
+  goldLight: '#4DB6E6',
+  cream: '#F2F6FB',
   red: '#C0283A',
   white: '#FFFFFF',
 } as const;

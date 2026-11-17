@@ -7,7 +7,7 @@ import { useAuth } from './AuthContext';
 interface BrandState { brand: BrandSettings; logoUrl: string; signatureUrl: string | null; reload: () => Promise<void> }
 const BrandContext = createContext<BrandState>({ brand: DEFAULT_BRAND, logoUrl: DEFAULT_BRAND_LOGO, signatureUrl: null, reload: async () => {} });
 
-/** The medical brand (Dr. Faraj Lashika) – independent from any club identity. */
+/** The medical brand (Dr. Saleh Fathullah) – independent from any club identity. */
 export function BrandProvider({ children }: { children: ReactNode }) {
   const { profile } = useAuth();
   const [brand, setBrand] = useState<BrandSettings>(DEFAULT_BRAND);

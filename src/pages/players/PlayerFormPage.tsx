@@ -15,7 +15,7 @@ type Form = {
   jersey_number: string; position: string; height_cm: string; weight_kg: string; dominant_hand: string;
   team_category: string; registration_date: string; season_id: string; status: Player['status'];
 };
-const empty: Form = { full_name: '', date_of_birth: '', nationality: 'Tanzanian', phone: '', email: '', address: '', jersey_number: '', position: '', height_cm: '', weight_kg: '', dominant_hand: 'Right', team_category: 'Senior Men', registration_date: todayISO(), season_id: '', status: 'active' };
+const empty: Form = { full_name: '', date_of_birth: '', nationality: 'Libyan', phone: '', email: '', address: '', jersey_number: '', position: '', height_cm: '', weight_kg: '', dominant_hand: 'Right', team_category: 'Senior Men', registration_date: todayISO(), season_id: '', status: 'active' };
 
 export function validatePlayer(f: Form, players: Player[], id?: string) {
   const e: Record<string, string> = {};
@@ -111,7 +111,7 @@ export default function PlayerFormPage() {
               <Input type="date" value={form.date_of_birth} onChange={(e) => set('date_of_birth')(e.target.value)} error={!!errors.date_of_birth} max={todayISO()} />
             </Field>
             <Field label="Nationality"><Input value={form.nationality} onChange={(e) => set('nationality')(e.target.value)} /></Field>
-            <Field label="Phone Number" error={errors.phone}><Input type="tel" value={form.phone} onChange={(e) => set('phone')(e.target.value)} placeholder="+255 …" error={!!errors.phone} /></Field>
+            <Field label="Phone Number" error={errors.phone}><Input type="tel" value={form.phone} onChange={(e) => set('phone')(e.target.value)} placeholder="+218 …" error={!!errors.phone} /></Field>
             <Field label="Email Address" error={errors.email}><Input type="email" value={form.email} onChange={(e) => set('email')(e.target.value)} error={!!errors.email} /></Field>
             <Field label="Residential Address" className="sm:col-span-2"><Textarea rows={2} value={form.address} onChange={(e) => set('address')(e.target.value)} /></Field>
           </Grid>

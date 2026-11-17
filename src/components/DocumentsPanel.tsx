@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Archive, Download, Eye, FileText, Image as ImageIcon, Upload } from 'lucide-react';
 import * as api from '../lib/api';
+import { openFile, saveFile } from '../lib/native';
 import { DOCUMENT_CATEGORIES, MAX_DOC_BYTES } from '../lib/constants';
 import { formatBytes, formatDate, todayISO } from '../lib/format';
 import { useAsync } from '../hooks/useAsync';
@@ -19,7 +20,10 @@ export function DocumentsPanel({ playerId, injuryId, examinationId, showPlayer }
   const [archiving, setArchiving] = useState(false);
 
   const view = async (d: MedicalDocument, download = false) => {
-    try { window.open(await api.getDocumentUrl(d, download), '_blank', 'noopener'); } catch (e) { toast.error((e as Error).message); }
+    try {
+      const blob = await api.getDocumentBlob(d);
+      if (download) await saveFile(blob, d.file_name); else await openFile(blob, d.file_name);
+    } catch (e) { if (!/cancel/i.test((e as Error).message)) toast.error((e as Error).message); }
   };
   const archive = async () => {
     if (!toArchive) return;

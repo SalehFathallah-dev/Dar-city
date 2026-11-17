@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Dr. Saleh Fathullah</string>
+    <string name="title_activity_main">Dr. Saleh Fathullah</string>
+    <string name="package_name">com.drsalehfathullah.sportsmed</string>
+    <string name="custom_url_scheme">com.drsalehfathullah.sportsmed</string>
+</resources>

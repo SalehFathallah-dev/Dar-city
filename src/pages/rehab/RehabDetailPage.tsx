@@ -63,7 +63,7 @@ export default function RehabDetailPage() {
         <Card title="Pain Trend">
           {chart.length ? (
             <ResponsiveContainer width="100%" height={200}>
-              <LineChart data={chart} margin={{ left: -20, right: 10, top: 10 }}><CartesianGrid stroke="#eee" vertical={false} /><XAxis dataKey="date" tick={{ fontSize: 11 }} /><YAxis domain={[0, 10]} tick={{ fontSize: 11 }} /><Tooltip /><Line dataKey="pain" stroke="#9A7634" strokeWidth={3} /></LineChart>
+              <LineChart data={chart} margin={{ left: -20, right: 10, top: 10 }}><CartesianGrid stroke="#eee" vertical={false} /><XAxis dataKey="date" tick={{ fontSize: 11 }} /><YAxis domain={[0, 10]} tick={{ fontSize: 11 }} /><Tooltip /><Line dataKey="pain" stroke="#1E7FC2" strokeWidth={3} /></LineChart>
             </ResponsiveContainer>
           ) : <EmptyState title="No sessions yet" />}
         </Card>

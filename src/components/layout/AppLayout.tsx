@@ -3,9 +3,8 @@ import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import clsx from 'clsx';
 import {
   Activity, BarChart3, CalendarCheck2, ClipboardList, Download, FileStack, FileText, HeartPulse, LayoutDashboard,
-  LogOut, Menu, Plus, Search, Settings, ShieldCheck, Stethoscope, UserPlus, Users, X, Zap, History, BadgeCheck, WifiOff, Footprints, Layers, Shield, KeyRound,
+  LogOut, Menu, Plus, Search, Settings, Stethoscope, UserPlus, Users, X, Zap, History, BadgeCheck, Footprints, Layers, Shield, KeyRound,
 } from 'lucide-react';
-import { useRegisterSW } from 'virtual:pwa-register/react';
 import { useAuth } from '../../context/AuthContext';
 import { useReference } from '../../context/ReferenceContext';
 import { ROLE_LABELS } from '../../lib/constants';
@@ -14,7 +13,6 @@ import { BrandLogo, CurrentClubBadge } from '../Branding';
 import { ClubSwitcher } from '../ClubSwitcher';
 import { useBrand } from '../../context/BrandContext';
 import { ChangePasswordModal } from '../ChangePasswordModal';
-import { useOnline } from '../../hooks/useOnline';
 import type { Capabilities } from '../../lib/permissions';
 
 interface NavItem { to: string; label: string; icon: ReactNode; show: (c: Capabilities) => boolean }
@@ -52,7 +50,6 @@ export function AppLayout() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [pwOpen, setPwOpen] = useState(false);
   const location = useLocation();
-  const online = useOnline();
   useEffect(() => setMobileOpen(false), [location.pathname]);
 
   const sidebar = (
@@ -107,12 +104,6 @@ export function AppLayout() {
       )}
       <div className="lg:pl-64">
         <TopBar onMenu={() => setMobileOpen(true)} />
-        {!online && (
-          <div className="flex items-center gap-2 bg-brand-red px-4 py-2 text-sm font-medium text-white">
-            <WifiOff className="h-4 w-4" /> You are offline. Medical records are not stored on this device – changes cannot be saved until the connection returns.
-          </div>
-        )}
-        <UpdatePrompt />
         <main className="mx-auto max-w-7xl px-4 pb-28 pt-6 sm:px-6 lg:px-8 lg:pb-12">
           <Outlet />
         </main>
@@ -268,14 +259,3 @@ function MobileNav() {
   );
 }
 
-function UpdatePrompt() {
-  const { needRefresh: [needRefresh, setNeedRefresh], updateServiceWorker } = useRegisterSW();
-  if (!needRefresh) return null;
-  return (
-    <div className="flex flex-wrap items-center gap-3 bg-brand-navy px-4 py-2 text-sm text-white">
-      <ShieldCheck className="h-4 w-4 text-brand-gold" /> A new version of the application is available.
-      <Button size="sm" onClick={() => void updateServiceWorker(true)}>Update now</Button>
-      <button className="text-neutral-400 hover:text-white" onClick={() => setNeedRefresh(false)}>Later</button>
-    </div>
-  );
-}

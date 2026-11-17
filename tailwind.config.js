@@ -5,17 +5,16 @@ export default {
     extend: {
       colors: {
         brand: {
-          // Medical brand – Dr. Faraj Lashika (navy & gold)
-          ink: '#0F1A33',
-          navy: '#142347',
-          navy2: '#1E2F58',
-          gold: '#9A7634',
-          goldDark: '#7E5F27',
-          goldLight: '#C9A866',
-          sand: '#D9C9A3',
-          cream: '#F7F3EA',
+          // Medical brand – Dr. Saleh Fathullah (navy & sky blue from the logo)
+          ink: '#0C1438',
+          navy: '#182A5C',
+          navy2: '#22397A',
+          gold: '#1E7FC2',
+          goldDark: '#17649C',
+          goldLight: '#4DB6E6',
+          sand: '#BFDDF2',
+          cream: '#F2F6FB',
           red: '#C0283A',
-          // Dar City club accent (used only for club-specific touches)
           clubOrange: '#F4511E',
         },
       },

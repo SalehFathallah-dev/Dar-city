@@ -83,9 +83,9 @@ export default function OverviewPage() {
               <CartesianGrid vertical={false} stroke="#eee" />
               <XAxis dataKey="name" tick={{ fontSize: 11 }} /><YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
               <Tooltip contentStyle={{ borderRadius: 10, fontSize: 12 }} /><Legend wrapperStyle={{ fontSize: 11 }} iconType="circle" />
-              <Bar dataKey="Players" fill="#142347" radius={[4, 4, 0, 0]} isAnimationActive={false} />
+              <Bar dataKey="Players" fill="#182A5C" radius={[4, 4, 0, 0]} isAnimationActive={false} />
               <Bar dataKey="Available" fill="#2f855a" radius={[4, 4, 0, 0]} isAnimationActive={false} />
-              <Bar dataKey="Injuries" fill="#9A7634" radius={[4, 4, 0, 0]} isAnimationActive={false} />
+              <Bar dataKey="Injuries" fill="#1E7FC2" radius={[4, 4, 0, 0]} isAnimationActive={false} />
               <Bar dataKey="Currently injured" fill="#C0283A" radius={[4, 4, 0, 0]} isAnimationActive={false} />
             </BarChart>
           </ResponsiveContainer>
