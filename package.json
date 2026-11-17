@@ -3,14 +3,15 @@
   "private": true,
   "version": "1.0.0",
   "type": "module",
-  "description": "Dr. Saleh Fathullah – Orthopedic & Sports Medicine: offline Android medical records app",
+  "description": "Dr. Saleh Fathullah \u2013 Orthopedic & Sports Medicine: medical records, athlete portal and team status (Android)",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "typecheck": "tsc -b",
     "test": "vitest run",
-    "android": "npm run build && npx cap sync android"
+    "android": "npm run build && npx cap sync android",
+    "test:db": "bash scripts/test-db.sh"
   },
   "dependencies": {
     "@capacitor-community/file-opener": "^7.0.1",

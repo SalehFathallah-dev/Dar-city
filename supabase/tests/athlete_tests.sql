@@ -184,3 +184,26 @@ do $$ begin
 end $$;
 reset role;
 \echo athlete clear tests passed
+
+-- A11. Athletes may record their own sign-in, nothing else
+select pg_temp.act_as('a2a2a2a2-a2a2-4a2a-8a2a-a2a2a2a2a2a2');
+do $$ begin
+  perform public.log_event('LOGIN', 'session');
+  begin
+    perform public.log_event('EXPORT_CSV', 'players');
+    raise exception 'athlete wrote an export audit event';
+  exception when insufficient_privilege then null; end;
+end $$;
+reset role;
+\echo athlete audit tests passed
+
+-- A12. Deleting a player disables its athlete account
+select set_config('request.jwt.claim.sub', '', false);
+insert into public.players (id, club_id, full_name, date_of_birth, position) values ('00000000-0000-4000-8000-0000000000ee', '00000000-0000-4000-8000-00000000c001', 'Temp Player', '2001-01-01', 'Center');
+insert into auth.users (id, email) values ('a3a3a3a3-a3a3-4a3a-8a3a-a3a3a3a3a3a3', 'athlete.temp@dsf.local');
+update public.profiles set role = 'athlete', is_active = true, player_id = '00000000-0000-4000-8000-0000000000ee' where email = 'athlete.temp@dsf.local';
+delete from public.players where id = '00000000-0000-4000-8000-0000000000ee';
+do $$ begin
+  assert (select not is_active and player_id is null from public.profiles where email = 'athlete.temp@dsf.local'), 'athlete not disabled on player delete';
+end $$;
+\echo athlete unlink tests passed
