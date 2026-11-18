@@ -85,3 +85,8 @@ export function referenceNumber(prefix: string, date = new Date()): string {
 export function initials(name: string): string {
   return name.replace(/^DEMO\s+/i, '').split(/\s+/).filter(Boolean).slice(0, 2).map((p) => p[0]!.toUpperCase()).join('');
 }
+
+/** Playing position for display (optional since roster imports may not include it). */
+export function posLabel(position: string | null | undefined): string {
+  return position || 'Position not set';
+}

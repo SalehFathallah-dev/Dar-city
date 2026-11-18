@@ -5,7 +5,7 @@ import * as api from '../../lib/api';
 import { useAsync } from '../../hooks/useAsync';
 import { useAuth } from '../../context/AuthContext';
 import { EXAM_CLEARANCE, EXAM_TYPES } from '../../lib/constants';
-import { formatDate } from '../../lib/format';
+import { formatDate, posLabel } from '../../lib/format';
 import { inRange } from '../../lib/analytics';
 import { Button, Card, DemoBadge, ErrorBlock, PageHeader, SearchInput, Select, Spinner, StatusBadge, Table, Td } from '../../components/ui';
 import { DateRangeFilter, useDateRange } from '../../components/DateRangeFilter';
@@ -42,7 +42,7 @@ export default function ExaminationsPage() {
               <tr key={e.id} className="cursor-pointer hover:bg-brand-cream/40" onClick={() => navigate(`/examinations/${e.id}`)}>
                 <Td className="font-mono text-xs">{e.exam_code} <DemoBadge show={e.is_demo} /></Td>
                 <Td>{formatDate(e.examination_date)}</Td>
-                <Td className="font-semibold">{e.players?.full_name}<span className="block text-xs font-normal text-neutral-500">#{e.players?.jersey_number ?? '–'} · {e.players?.position}</span></Td>
+                <Td className="font-semibold">{e.players?.full_name}<span className="block text-xs font-normal text-neutral-500">#{e.players?.jersey_number ?? '–'} · {posLabel(e.players?.position)}</span></Td>
                 <Td>{e.examination_type}</Td>
                 <Td className="text-xs">{e.bp_systolic ? `${e.bp_systolic}/${e.bp_diastolic} mmHg` : '—'}{e.heart_rate ? ` · ${e.heart_rate} bpm` : ''}</Td>
                 <Td><StatusBadge status={e.clearance_status ?? 'Pending'} /></Td>

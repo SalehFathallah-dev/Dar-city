@@ -1,4 +1,5 @@
 import { useReference } from '../context/ReferenceContext';
+import { posLabel } from '../lib/format';
 import { Select } from './ui';
 
 export function PlayerPicker({ value, onChange, error, includeInactive, placeholder = 'Select player…', disabled }:
@@ -7,6 +8,6 @@ export function PlayerPicker({ value, onChange, error, includeInactive, placehol
   const list = players.filter((p) => p.status === 'active' || (includeInactive && p.status !== 'archived') || p.id === value);
   return (
     <Select value={value} onChange={(e) => onChange(e.target.value)} error={error} disabled={disabled} placeholder={placeholder}
-      options={list.map((p) => ({ value: p.id, label: `${p.jersey_number != null ? '#' + p.jersey_number + ' ' : ''}${p.full_name} · ${p.position}` }))} />
+      options={list.map((p) => ({ value: p.id, label: `${p.jersey_number != null ? '#' + p.jersey_number + ' ' : ''}${p.full_name} · ${posLabel(p.position)}` }))} />
   );
 }

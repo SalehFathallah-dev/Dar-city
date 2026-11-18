@@ -6,7 +6,7 @@ import * as reports from '../lib/reports';
 import { useAsync } from '../hooks/useAsync';
 import { useReference } from '../context/ReferenceContext';
 import { EXAM_CLEARANCE } from '../lib/constants';
-import { formatDate, todayISO } from '../lib/format';
+import { formatDate, todayISO, posLabel } from '../lib/format';
 import { latestByPlayer } from '../lib/analytics';
 import { Button, Card, ErrorBlock, PageHeader, Select, Spinner, StatusBadge, Table, Tabs, Td } from '../components/ui';
 import { useReportPreview } from '../components/PdfPreview';
@@ -35,7 +35,7 @@ export default function ClearancesPage() {
           <Table headers={['Player', 'Current clearance', 'Decision date', 'Restrictions', 'Valid until', '']} empty={!filteredCurrent.length}>
             {filteredCurrent.map(({ p, c }) => (
               <tr key={p.id}>
-                <Td><Link to={`/players/${p.id}?tab=clearance`} className="font-semibold hover:text-brand-gold">{p.full_name}</Link><span className="block text-xs text-neutral-500">#{p.jersey_number ?? '–'} · {p.position}</span></Td>
+                <Td><Link to={`/players/${p.id}?tab=clearance`} className="font-semibold hover:text-brand-gold">{p.full_name}</Link><span className="block text-xs text-neutral-500">#{p.jersey_number ?? '–'} · {posLabel(p.position)}</span></Td>
                 <Td><StatusBadge status={c?.clearance_status ?? 'Clearance pending'} />{c?.valid_until && c.valid_until < todayISO() && <span className="mt-1 block text-xs font-semibold text-brand-red">Expired</span>}</Td>
                 <Td>{formatDate(c?.decision_date)}</Td><Td>{c?.restrictions}</Td><Td>{formatDate(c?.valid_until)}</Td>
                 <Td>{c && <Button size="sm" variant="ghost" icon={<FileText className="h-4 w-4" />} onClick={() => pdf.run(() => reports.clearanceCertificate(c.id))}>Certificate</Button>}</Td>

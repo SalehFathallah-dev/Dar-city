@@ -7,7 +7,7 @@ import { useAsync } from '../hooks/useAsync';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { AVAILABILITY, MEDICAL_STATUSES } from '../lib/constants';
-import { formatDate, formatDateTime, todayISO } from '../lib/format';
+import { formatDate, formatDateTime, todayISO, posLabel } from '../lib/format';
 import { latestByPlayer, isOpenInjury } from '../lib/analytics';
 import type { Availability, Injury } from '../lib/types';
 import { Badge, Button, Card, Checkbox, ErrorBlock, Field, Grid, Input, Modal, PageHeader, Select, Spinner, StatCard, StatusBadge, Table, Td, Textarea } from '../components/ui';
@@ -71,7 +71,7 @@ export default function AvailabilityPage() {
                   <Td className="font-semibold">{r.full_name}{r.staff_notes && <span className="block text-xs font-normal text-neutral-500">{r.staff_notes}</span>}
                     {caps.viewMedical && r.internal_notes && <span className="block text-xs font-normal italic text-brand-red">Internal: {r.internal_notes}</span>}</Td>
                   <Td className="font-display text-lg font-bold text-brand-gold">{r.jersey_number ?? '–'}</Td>
-                  <Td>{r.position}</Td>
+                  <Td>{posLabel(r.position)}</Td>
                   <Td>{r.medical_status}</Td>
                   <Td><StatusBadge status={r.availability} />{caps.viewMedical && r.shared === false && <span className="mt-1 flex items-center gap-1 text-[11px] text-neutral-500"><EyeOff className="h-3 w-3" /> Not shared</span>}</Td>
                   <Td className="max-w-xs">{r.restrictions ?? '—'}</Td>

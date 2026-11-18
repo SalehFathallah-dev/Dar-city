@@ -11,7 +11,7 @@ import { useClub } from '../context/ClubContext';
 import { BrandLogo, ClubLogo } from '../components/Branding';
 import { APP, AVAILABILITY } from '../lib/constants';
 import { computeDashboardStats, countBy, daysLost, inRange, injuryAnalytics, isOpenInjury, monthlyTrend } from '../lib/analytics';
-import { formatDate, todayISO } from '../lib/format';
+import { formatDate, todayISO, posLabel } from '../lib/format';
 import { Badge, Card, EmptyState, ErrorBlock, PlayerAvatar, Spinner, StatCard, StatusBadge } from '../components/ui';
 import { DateRangeFilter, useDateRange } from '../components/DateRangeFilter';
 import { DonutChart, HBarChart, TrendChart, VBarChart } from '../components/charts';
@@ -169,7 +169,7 @@ function ClinicalDashboard() {
           {view.recentPlayers.length ? view.recentPlayers.map((p) => (
             <Link key={p.id} to={`/players/${p.id}`} className="flex items-center gap-3 border-b border-neutral-100 px-5 py-3 last:border-0 hover:bg-brand-cream/50">
               <PlayerAvatar name={p.full_name} photoPath={p.photo_path} size={32} />
-              <div className="min-w-0 flex-1"><p className="truncate text-sm font-semibold">{p.full_name}</p><p className="text-xs text-neutral-500">#{p.jersey_number ?? '–'} · {p.position}</p></div>
+              <div className="min-w-0 flex-1"><p className="truncate text-sm font-semibold">{p.full_name}</p><p className="text-xs text-neutral-500">#{p.jersey_number ?? '–'} · {posLabel(p.position)}</p></div>
               <span className="text-xs text-neutral-400">{formatDate(p.registration_date)}</span>
             </Link>
           )) : <EmptyState title="No players registered in this period" icon={<UserPlus className="h-6 w-6" />} />}

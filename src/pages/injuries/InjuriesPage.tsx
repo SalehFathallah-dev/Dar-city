@@ -5,7 +5,7 @@ import * as api from '../../lib/api';
 import { useAsync } from '../../hooks/useAsync';
 import { useAuth } from '../../context/AuthContext';
 import { BODY_REGIONS, INJURY_STATUSES, INJURY_TYPES, SEVERITIES } from '../../lib/constants';
-import { formatDate } from '../../lib/format';
+import { formatDate, posLabel } from '../../lib/format';
 import { daysLost, inRange, isOpenInjury } from '../../lib/analytics';
 import { Button, Card, DemoBadge, ErrorBlock, Modal, PageHeader, SearchInput, Select, Spinner, StatusBadge, Table, Td } from '../../components/ui';
 import { DateRangeFilter, useDateRange } from '../../components/DateRangeFilter';
@@ -53,7 +53,7 @@ export default function InjuriesPage() {
               <tr key={i.id} className="cursor-pointer hover:bg-brand-cream/40" onClick={() => navigate(`/injuries/${i.id}`)}>
                 <Td className="font-mono text-xs">{i.injury_code} <DemoBadge show={i.is_demo} /></Td>
                 <Td>{formatDate(i.injury_date)}</Td>
-                <Td className="font-semibold">{i.players?.full_name}<span className="block text-xs font-normal text-neutral-500">#{i.players?.jersey_number ?? '–'} · {i.players?.position}</span></Td>
+                <Td className="font-semibold">{i.players?.full_name}<span className="block text-xs font-normal text-neutral-500">#{i.players?.jersey_number ?? '–'} · {posLabel(i.players?.position)}</span></Td>
                 <Td>{i.body_region}{i.body_side && <span className="block text-xs text-neutral-500">{i.body_side}</span>}</Td>
                 <Td>{i.injury_type}{i.diagnosis && <span className="block text-xs text-neutral-500">{i.diagnosis}</span>}</Td>
                 <Td>{i.setting}{i.is_recurrent && <span className="block text-xs font-semibold text-brand-red">Recurrent</span>}</Td>

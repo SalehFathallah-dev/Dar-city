@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { posLabel } from '../../lib/format';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import clsx from 'clsx';
 import {
@@ -201,7 +202,7 @@ function GlobalSearch() {
               <PlayerAvatar name={p.full_name} photoPath={p.photo_path} size={32} />
               <div className="min-w-0">
                 <p className="truncate text-sm font-semibold">{p.full_name}</p>
-                <p className="text-xs text-neutral-500">#{p.jersey_number ?? '–'} · {p.position} · {p.player_code}{p.status !== 'active' ? ` · ${p.status}` : ''}</p>
+                <p className="text-xs text-neutral-500">#{p.jersey_number ?? '–'} · {posLabel(p.position)} · {p.player_code}{p.status !== 'active' ? ` · ${p.status}` : ''}</p>
               </div>
             </button>
           ))}

@@ -6,7 +6,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import * as api from '../../lib/api';
 import { POSITIONS } from '../../lib/constants';
-import { calculateAge, formatDate } from '../../lib/format';
+import { calculateAge, formatDate, posLabel } from '../../lib/format';
 import type { Player } from '../../lib/types';
 import { Badge, Button, Card, ConfirmDialog, DemoBadge, EmptyState, PageHeader, PlayerAvatar, SearchInput, Select, Spinner, StatusBadge, Table, Td } from '../../components/ui';
 
@@ -69,7 +69,7 @@ export default function PlayersPage() {
                   <PlayerAvatar name={p.full_name} photoPath={p.photo_path} size={44} />
                   <div className="min-w-0 flex-1">
                     <p className="truncate font-semibold">{p.full_name} <DemoBadge show={p.is_demo} /></p>
-                    <p className="text-xs text-neutral-500">#{p.jersey_number ?? '–'} · {p.position} · {calculateAge(p.date_of_birth)} yrs</p>
+                    <p className="text-xs text-neutral-500">#{p.jersey_number ?? '–'} · {posLabel(p.position)} · {calculateAge(p.date_of_birth)} yrs</p>
                   </div>
                   <StatusBadge status={p.status} />
                 </Link>
@@ -88,7 +88,7 @@ export default function PlayersPage() {
                       </Link>
                     </Td>
                     <Td className="font-mono text-xs">{p.player_code}</Td>
-                    <Td><Badge color="beige">{p.position}</Badge></Td>
+                    <Td><Badge color="beige">{posLabel(p.position)}</Badge></Td>
                     <Td>{calculateAge(p.date_of_birth)}</Td>
                     <Td>{p.height_cm ?? '—'} cm / {p.weight_kg ?? '—'} kg</Td>
                     <Td>{p.bmi ?? '—'}</Td>

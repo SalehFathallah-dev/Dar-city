@@ -22,7 +22,6 @@ export function validatePlayer(f: Form, players: Player[], id?: string) {
   if (f.full_name.trim().length < 2) e.full_name = 'Full name is required';
   if (!f.date_of_birth) e.date_of_birth = 'Date of birth is required';
   else { const age = calculateAge(f.date_of_birth); if (age === null || age < 10 || age > 70) e.date_of_birth = 'Enter a valid date of birth'; }
-  if (!f.position) e.position = 'Select a playing position';
   if (f.jersey_number !== '') {
     const n = Number(f.jersey_number);
     if (!Number.isInteger(n) || n < 0 || n > 99) e.jersey_number = 'Jersey number must be 0–99';
@@ -66,7 +65,7 @@ export default function PlayerFormPage() {
         const [p, contacts] = await Promise.all([api.getPlayer(id), api.listContacts(id)]);
         setForm({
           full_name: p.full_name, date_of_birth: p.date_of_birth, nationality: p.nationality ?? '', phone: p.phone ?? '', email: p.email ?? '', address: p.address ?? '',
-          jersey_number: p.jersey_number?.toString() ?? '', position: p.position, height_cm: p.height_cm?.toString() ?? '', weight_kg: p.weight_kg?.toString() ?? '',
+          jersey_number: p.jersey_number?.toString() ?? '', position: p.position ?? '', height_cm: p.height_cm?.toString() ?? '', weight_kg: p.weight_kg?.toString() ?? '',
           dominant_hand: p.dominant_hand ?? '', team_category: p.team_category, registration_date: p.registration_date, season_id: p.season_id ?? '', status: p.status,
         });
         setPhotoPath(p.photo_path);
@@ -140,7 +139,7 @@ export default function PlayerFormPage() {
                 ? <Select value={form.team_category} onChange={(e) => set('team_category')(e.target.value)} options={categories.includes(form.team_category) || !form.team_category ? categories : [form.team_category, ...categories]} />
                 : <Input value={form.team_category} onChange={(e) => set('team_category')(e.target.value)} />}
             </Field>
-            <Field label="Playing Position" required error={errors.position} className="sm:col-span-2"><SegmentedControl value={form.position} options={POSITIONS} onChange={set('position')} /></Field>
+            <Field label="Playing Position" hint="Optional – can be completed later" error={errors.position} className="sm:col-span-2"><SegmentedControl value={form.position} options={POSITIONS} onChange={set('position')} /></Field>
             <Field label="Height (cm)" error={errors.height_cm}><Input type="number" inputMode="decimal" step="0.1" value={form.height_cm} onChange={(e) => set('height_cm')(e.target.value)} error={!!errors.height_cm} /></Field>
             <Field label="Weight (kg)" error={errors.weight_kg}><Input type="number" inputMode="decimal" step="0.1" value={form.weight_kg} onChange={(e) => set('weight_kg')(e.target.value)} error={!!errors.weight_kg} /></Field>
             <Field label="BMI (automatically calculated)"><div className="rounded-lg border border-dashed border-neutral-300 bg-neutral-50 px-3 py-2.5 text-sm">{bmi ? <><b>{bmi}</b> kg/m² <span className="text-neutral-500">· {bmiCategory(bmi)}</span></> : '—'}</div></Field>

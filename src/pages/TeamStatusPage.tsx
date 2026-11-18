@@ -5,7 +5,7 @@ import * as api from '../lib/api';
 import { useAsync } from '../hooks/useAsync';
 import { useClub } from '../context/ClubContext';
 import { useAuth } from '../context/AuthContext';
-import { addDays, formatDate, todayISO } from '../lib/format';
+import { addDays, formatDate, todayISO, posLabel } from '../lib/format';
 import type { AdherenceRow, TeamSummaryRow } from '../lib/types';
 import { Badge, Card, ErrorBlock, Modal, PageHeader, SegmentedControl, Select, Spinner, StatCard, Table, Td, Tabs, statusColor } from '../components/ui';
 import { AdherenceGrid, summarize } from '../components/PrescriptionsPanel';
@@ -64,7 +64,7 @@ export default function TeamStatusPage() {
               const s = summarize(byPlayer.get(r.player_id) ?? []);
               return (
                 <tr key={r.player_id} className="cursor-pointer hover:bg-brand-cream/60" onClick={() => { setDetail(r); setDetailTab('recovery'); }}>
-                  <Td><p className="font-semibold">{r.jersey_number != null && <span className="text-brand-gold">#{r.jersey_number} </span>}{r.full_name}</p><p className="text-xs text-neutral-500">{r.position} · {r.team_category}</p></Td>
+                  <Td><p className="font-semibold">{r.jersey_number != null && <span className="text-brand-gold">#{r.jersey_number} </span>}{r.full_name}</p><p className="text-xs text-neutral-500">{posLabel(r.position)} · {r.team_category}</p></Td>
                   <Td><Badge color={statusColor(r.availability)}>{r.availability}</Badge><p className="mt-1 text-xs text-neutral-500">{r.medical_status}</p>{r.restrictions && <p className="text-xs text-amber-700">{r.restrictions}</p>}</Td>
                   <Td className="text-xs">{r.rehab_phase ? <Badge color="orange">{r.rehab_phase}</Badge> : r.open_injuries ? 'Under medical follow-up' : '—'}{r.staff_notes && <p className="mt-1 text-neutral-600">{r.staff_notes}</p>}</Td>
                   <Td className="text-xs">{r.expected_return_date ? formatDate(r.expected_return_date) : '—'}</Td>

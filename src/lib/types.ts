@@ -10,7 +10,7 @@ export interface Season { id: string; club_id: string; name: string; start_date:
 export interface Player {
   id: string; club_id: string; player_code: string; full_name: string; date_of_birth: string; nationality: string | null;
   photo_path: string | null; phone: string | null; email: string | null; address: string | null;
-  jersey_number: number | null; position: string; height_cm: number | null; weight_kg: number | null; bmi: number | null;
+  jersey_number: number | null; position: string | null; height_cm: number | null; weight_kg: number | null; bmi: number | null;
   dominant_hand: string | null; team_category: string; registration_date: string; season_id: string | null;
   status: 'active' | 'inactive' | 'archived'; archived_at: string | null; is_demo: boolean; created_at: string; updated_at: string;
 }

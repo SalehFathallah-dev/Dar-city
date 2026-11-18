@@ -10,7 +10,7 @@ import { useToast } from '../../context/ToastContext';
 import { useClub } from '../../context/ClubContext';
 import { ClubLogo } from '../../components/Branding';
 import { APP, EXAM_CLEARANCE } from '../../lib/constants';
-import { bmiCategory, calculateAge, formatDate, formatDateTime, todayISO } from '../../lib/format';
+import { bmiCategory, calculateAge, formatDate, formatDateTime, todayISO, posLabel } from '../../lib/format';
 import { daysLost } from '../../lib/analytics';
 import type { MedicalHistory } from '../../lib/types';
 import {
@@ -93,7 +93,7 @@ export default function PlayerProfilePage() {
               <h1 className="font-display text-3xl font-bold uppercase tracking-wide">{p.full_name}</h1>
               <DemoBadge show={p.is_demo} />
             </div>
-            <p className="text-sm text-brand-sand">{p.position} · {p.player_code} · {p.team_category}</p>
+            <p className="text-sm text-brand-sand">{posLabel(p.position)} · {p.player_code} · {p.team_category}</p>
             <div className="mt-3 grid grid-cols-2 gap-3 text-sm sm:grid-cols-5">
               {[['Age', `${calculateAge(p.date_of_birth) ?? '—'} yrs`], ['Height', p.height_cm ? `${p.height_cm} cm` : '—'], ['Weight', p.weight_kg ? `${p.weight_kg} kg` : '—'], ['BMI', p.bmi ?? '—'], ['Status', p.status.toUpperCase()]].map(([k, v]) => (
                 <div key={k as string}><p className="text-[10px] font-semibold uppercase tracking-widest text-neutral-400">{k}</p><p className="font-semibold">{v}</p></div>
@@ -166,7 +166,7 @@ export default function PlayerProfilePage() {
               </Card>
               <Card title="Basketball Information">
                 <DetailGrid cols={2} items={[
-                  { label: 'Jersey number', value: p.jersey_number != null ? `#${p.jersey_number}` : null }, { label: 'Position', value: p.position },
+                  { label: 'Jersey number', value: p.jersey_number != null ? `#${p.jersey_number}` : null }, { label: 'Position', value: posLabel(p.position) },
                   { label: 'Height', value: p.height_cm ? `${p.height_cm} cm` : null }, { label: 'Weight', value: p.weight_kg ? `${p.weight_kg} kg` : null },
                   { label: 'BMI', value: p.bmi ? `${p.bmi} – ${bmiCategory(p.bmi)}` : null }, { label: 'Dominant hand', value: p.dominant_hand },
                   { label: 'Team category', value: p.team_category }, { label: 'Registration date', value: formatDate(p.registration_date) },
