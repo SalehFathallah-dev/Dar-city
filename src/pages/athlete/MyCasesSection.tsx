@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import clsx from 'clsx';
 import { ChevronDown, FileText, MessageSquare, Send, Stethoscope } from 'lucide-react';
 import * as api from '../../lib/api';
@@ -22,6 +22,9 @@ export function MyCasesSection({ cases, onChanged }: { cases: MyCase[]; onChange
   const [open, setOpen] = useState<string | null>(cases.find((c) => c.status === 'Information Requested')?.id ?? null);
   const [reply, setReply] = useState('');
   const [busy, setBusy] = useState(false);
+  // Open the report the doctor is waiting on as soon as it arrives (cases load after the first render).
+  const waitingId = cases.find((c) => c.status === 'Information Requested')?.id ?? null;
+  useEffect(() => { if (waitingId) setOpen((o) => o ?? waitingId); }, [waitingId]);
   if (!cases.length) return null;
   const send = async (c: MyCase) => {
     if (!reply.trim()) return;
