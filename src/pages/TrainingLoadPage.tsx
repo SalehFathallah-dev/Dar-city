@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import clsx from 'clsx';
-import { ChevronLeft, ChevronRight, Dumbbell, Pencil, Plus, Trash2, Wand2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Dumbbell, Lightbulb, Pencil, Plus, Trash2, Wand2 } from 'lucide-react';
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import * as api from '../lib/api';
 import { useAsync } from '../hooks/useAsync';
@@ -8,6 +8,7 @@ import { useAuth } from '../context/AuthContext';
 import { useReference } from '../context/ReferenceContext';
 import { useToast } from '../context/ToastContext';
 import { addDays, formatDate, todayISO } from '../lib/format';
+import { adviseSession, type Readiness } from '../lib/trainingAdvisor';
 import { PARTICIPATION, TRAINING_TYPES, type Participation, type TrainingSession } from '../lib/types';
 import { Badge, Button, Card, ConfirmDialog, EmptyState, ErrorBlock, Field, Grid, Input, Modal, PageHeader, Select, Spinner, Table, Td, Textarea } from '../components/ui';
 
@@ -140,6 +141,23 @@ function SessionModal({ value, existing, onClose, onSaved }: { value: Partial<Tr
   const [saving, setSaving] = useState(false);
   const setRow = (pid: string, patch: Partial<Participation>) => setRows((r) => ({ ...r, [pid]: { ...r[pid], ...patch } }));
   const isMatch = s.session_type === 'Match';
+  const date = s.session_date ?? todayISO();
+  const history = useAsync(async () => {
+    const sessions = await api.listTraining(addDays(date, -28), addDays(date, -1));
+    const participation = await api.listParticipation(sessions.map((x) => x.id));
+    let readiness: Readiness | null = null;
+    if (caps.viewMedical) {
+      const w = (await api.listWellness(date, date).catch(() => [])).filter((r) => r.kind === 'pre');
+      const avg = (xs: (number | null)[]) => { const v = xs.filter((x): x is number => x != null); return v.length ? Math.round((v.reduce((a, b) => a + b, 0) / v.length) * 10) / 10 : null; };
+      const flags = await api.getWellnessFlags(date).catch(() => []);
+      readiness = { readiness: avg(w.map((r) => r.readiness)), fatigue: avg(w.map((r) => r.fatigue)), responses: w.length, players: active.length,
+        flagged: new Set(flags.filter((f) => f.flag !== 'Missed questionnaires').map((f) => f.player_id)).size };
+    }
+    return { sessions, participation, readiness };
+  }, [date, caps.viewMedical]);
+  const advice = matches.data && history.data && s.session_type
+    ? adviseSession({ date, type: s.session_type, matches: matches.data, sessions: history.data.sessions, participation: history.data.participation, readiness: history.data.readiness, excludeSessionId: s.id })
+    : null;
   const fromQuestionnaires = async () => {
     try {
       const w = (await api.listWellness(s.session_date!, s.session_date!)).filter((r) => r.kind === 'post' && (r.session_type === s.session_type || (isMatch && r.session_type === 'Match')));
@@ -174,6 +192,19 @@ function SessionModal({ value, existing, onClose, onSaved }: { value: Partial<Tr
           <Field label="Season phase"><Select value={s.season_phase} onChange={(e) => setS({ ...s, season_phase: e.target.value as TrainingSession['season_phase'] })} options={['Pre-season', 'In-season', 'Off-season']} /></Field>
           {isMatch && <Field label="Match"><Select value={s.match_id ?? ''} onChange={(e) => setS({ ...s, match_id: e.target.value || null })} options={(matches.data ?? []).map((m) => ({ value: m.id, label: `${m.match_date} vs ${m.opponent}` }))} placeholder="Choose…" /></Field>}
         </Grid>
+        {advice && (
+          <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm">
+            <div className="flex flex-wrap items-center gap-2">
+              <Lightbulb className="h-5 w-5 text-brand-gold" />
+              <b className="text-brand-navy">Suggested: {advice.duration} min · RPE {advice.rpe}</b>
+              <Badge color="blue">{advice.label}</Badge>
+              <span className="text-xs text-neutral-600">≈ {advice.duration * advice.rpe} AU per player</span>
+              <Button size="sm" variant="secondary" className="ms-auto" onClick={() => setS({ ...s, duration_minutes: advice.duration, planned_rpe: advice.rpe })}>Apply suggestion</Button>
+            </div>
+            <ul className="mt-2 list-disc space-y-0.5 ps-5 text-xs text-neutral-700">{advice.reasons.map((r) => <li key={r}>{r}</li>)}</ul>
+            <p className="mt-1 text-[11px] text-neutral-500">Decision support from the match calendar, recent recorded load{caps.viewMedical ? ' and today\'s questionnaires' : ''}. The coach and physician decide.</p>
+          </div>
+        )}
         <Field label="Notes"><Textarea rows={2} value={s.notes ?? ''} onChange={(e) => setS({ ...s, notes: e.target.value })} /></Field>
         <div className="flex flex-wrap items-center justify-between gap-2">
           <p className="text-xs font-bold uppercase text-neutral-500">Participation</p>

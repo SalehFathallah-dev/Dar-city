@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import clsx from 'clsx';
-import { Activity, AlertTriangle, CalendarClock, ClipboardX, Inbox, Pill, ShieldAlert, Trophy, UserX, Waves } from 'lucide-react';
+import { Activity, AlertTriangle, CalendarClock, ClipboardX, Inbox, Pill, ShieldAlert, Timer, Trophy, UserX, Waves } from 'lucide-react';
 import * as api from '../lib/api';
 import { useAsync } from '../hooks/useAsync';
 import { useClub } from '../context/ClubContext';
@@ -23,7 +23,15 @@ export function AlertCenter() {
       api.listRecoverySessions(addDays(today, -7), today).catch(() => []),
     ]);
     const att = await api.listAttendance(recSessions.map((s) => s.id)).catch(() => []);
-    return { cases, flags, doses, team, matches, recSessions, att };
+    const recent = (await api.listMatches(addDays(today, -3), today).catch(() => [])).filter((m) => m.status !== 'Cancelled' && m.status !== 'Postponed' && (m.match_date < today || (m.match_time ?? '23:59') < new Date().toTimeString().slice(0, 5)));
+    let noMinutes: typeof recent = [];
+    if (recent.length) {
+      const sess = (await api.listTraining(addDays(today, -3), today).catch(() => [])).filter((s) => s.session_type === 'Match');
+      const part = await api.listParticipation(sess.map((s) => s.id)).catch(() => []);
+      const withMin = new Set(sess.filter((s) => part.some((p) => p.session_id === s.id && p.minutes_played != null)).map((s) => s.match_id));
+      noMinutes = recent.filter((m) => !withMin.has(m.id));
+    }
+    return { cases, flags, doses, team, matches, recSessions, att, noMinutes };
   }, [clubId, today]);
   if (data.loading) return <Card title="Alerts"><Spinner /></Card>;
   const d = data.data;
@@ -53,6 +61,8 @@ export function AlertCenter() {
     alerts.push({ key: 'match', icon: <Trophy className="h-5 w-5" />, tone: unavailable.length ? 'amber' : 'blue', title: `Match vs ${m.opponent} ${m.match_date === today ? 'today' : `on ${m.match_date.slice(5)}`}`,
       detail: unavailable.length ? `Not available / under review: ${unavailable.map((p) => p.full_name).join(', ')}` : 'All players available', to: '/matches' });
   }
+  if (d.noMinutes.length) alerts.push({ key: 'minutes', icon: <Timer className="h-5 w-5" />, tone: 'amber', title: `Enter minutes played: ${d.noMinutes.map((m) => `vs ${m.opponent}`).join(', ')}`,
+    detail: 'Minutes + RPE per player give an individualised recovery proposal (high / moderate / low load).', to: '/matches' });
   const todaysRecovery = d.recSessions.filter((s) => s.session_date === today && s.status === 'Scheduled');
   if (todaysRecovery.length) alerts.push({ key: 'rec', icon: <Waves className="h-5 w-5" />, tone: 'blue', title: `${todaysRecovery.length} recovery session(s) today`, detail: todaysRecovery.map((s) => `${s.kind}${s.start_time ? ` ${s.start_time.slice(0, 5)}` : ''}`).join(' · '), to: '/recovery' });
   const missedRec = d.att.filter((a) => a.status === 'Absent');

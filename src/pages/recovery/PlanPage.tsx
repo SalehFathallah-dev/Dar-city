@@ -11,6 +11,7 @@ import { addDays, formatDate } from '../../lib/format';
 import { PLAN_CATEGORIES, PLAN_DAYS, type RecoveryPlanItem } from '../../lib/types';
 import { Badge, Button, Card, Checkbox, ConfirmDialog, ErrorBlock, Field, Grid, Input, Modal, Select, Spinner, Textarea } from '../../components/ui';
 import { NewSessionModal } from './RecoveryPage';
+import { matchParticipation, proposeIndividualRecovery } from './applyAdvisor';
 
 const OFFSET: Record<string, number> = { 'MD-3': -3, 'MD-2': -2, 'MD-1': -1, MD: 0, 'MD+1': 1, 'MD+2': 2, 'MD+3': 3 };
 
@@ -39,19 +40,10 @@ export default function PlanPage() {
 
   const run = async (fn: () => Promise<unknown>, ok: string) => { setBusy(true); try { await fn(); toast.success(ok); await data.reload(); } catch (e) { toast.error((e as Error).message); } finally { setBusy(false); } };
   const minutesAdjust = () => run(async () => {
-    const sessions = (await api.listTraining(md!, md!)).filter((s) => s.match_id === plan.match_id || s.session_type === 'Match');
-    const part = await api.listParticipation(sessions.map((s) => s.id));
-    if (!part.some((p) => p.minutes_played != null)) throw new Error('No minutes played recorded for this match yet (Training Load → match session)');
-    const target = items.find((i) => i.day_label === 'MD+1' && i.category === 'Training load');
-    if (!target) throw new Error('No MD+1 training-load item to individualise');
-    const overrides = { ...target.player_overrides };
-    for (const p of part) {
-      if (p.minutes_played == null) continue;
-      if (p.minutes_played < 10) overrides[p.player_id] = `Low minutes (${p.minutes_played} min): compensatory conditioning session instead of recovery only.`;
-      else if (p.minutes_played >= 25) overrides[p.player_id] = `High minutes (${p.minutes_played} min): full recovery protocol, no extra conditioning.`;
-    }
-    await api.savePlanItem({ id: target.id, player_overrides: overrides });
-  }, 'MD+1 training load individualised by minutes played');
+    const all = await api.listMatches();
+    const { part } = await matchParticipation(match.data!);
+    await proposeIndividualRecovery(match.data!, all, part);
+  }, 'Plan individualised by minutes played, match load, soreness and restrictions');
 
   const days = PLAN_DAYS.filter((d) => items.some((i) => i.day_label === d));
   return (
@@ -70,7 +62,7 @@ export default function PlanPage() {
             : <Button loading={busy} icon={<CheckCircle2 className="h-4 w-4" />} onClick={() => void run(() => api.updatePlan(plan.id, { status: 'Approved' }), 'Plan approved – athletes and staff can see it')}>Approve plan</Button>)}
           <Button variant="secondary" icon={<Users className="h-4 w-4" />} onClick={() => setAudience(true)}>Team / selected players</Button>
           <Button variant="secondary" icon={<Plus className="h-4 w-4" />} onClick={() => setEdit({ plan_id: plan.id, day_label: 'MD+1', item_date: md ? addDays(md, 1) : undefined, category: 'Other', recommendation: '', player_overrides: {}, sort_order: items.length })}>Add recommendation</Button>
-          {md && <Button variant="secondary" loading={busy} icon={<Timer className="h-4 w-4" />} onClick={() => void minutesAdjust()}>Adjust by minutes played</Button>}
+          {md && match.data && <Button variant="secondary" loading={busy} icon={<Timer className="h-4 w-4" />} onClick={() => void minutesAdjust()}>Adjust by minutes played</Button>}
           {caps.isPhysician && <Button variant="ghost" icon={<Trash2 className="h-4 w-4" />} onClick={() => setDel(true)}>Delete plan</Button>}
         </div>
       )}

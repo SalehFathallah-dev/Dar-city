@@ -1,14 +1,17 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import clsx from 'clsx';
-import { CalendarDays, ChevronLeft, ChevronRight, List, Pencil, Plus, Trash2, Trophy, Wand2 } from 'lucide-react';
+import { CalendarDays, ChevronLeft, ChevronRight, List, Pencil, Plus, Timer, Trash2, Trophy, Wand2 } from 'lucide-react';
 import * as api from '../lib/api';
 import { useAsync } from '../hooks/useAsync';
 import { useAuth } from '../context/AuthContext';
+import { useReference } from '../context/ReferenceContext';
 import { useToast } from '../context/ToastContext';
 import { addDays, daysBetween, formatDate, todayISO } from '../lib/format';
 import { matchContext, proposeRecoveryPlan } from '../lib/recoveryPlanner';
-import type { Match } from '../lib/types';
+import { BAND_COLOR, loadBand } from '../lib/recoveryAdvisor';
+import { matchParticipation, proposeIndividualRecovery } from './recovery/applyAdvisor';
+import type { Match, Participation } from '../lib/types';
 import { Badge, Button, Card, ConfirmDialog, EmptyState, ErrorBlock, Field, Grid, Input, Modal, PageHeader, SegmentedControl, Select, Spinner, Textarea } from '../components/ui';
 
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -39,6 +42,7 @@ export default function MatchesPage() {
   const [edit, setEdit] = useState<Partial<Match> | null>(null);
   const [del, setDel] = useState<Match | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
+  const [minutesFor, setMinutesFor] = useState<Match | null>(null);
   const all = matches.data ?? [];
   const today = todayISO();
   const upcoming = all.filter((m) => m.match_date >= today);
@@ -72,6 +76,7 @@ export default function MatchesPage() {
         <p className="mt-1 text-xs text-neutral-500">{[m.competition, m.venue, m.category, m.travel && `Travel: ${m.travel}`, m.result && `Result: ${m.result}`].filter(Boolean).join(' · ')}</p>
         <div className="mt-3 flex flex-wrap gap-2">
           {caps.viewMedical && <Button size="sm" variant={plan ? 'secondary' : 'primary'} loading={busy === m.id} icon={<Wand2 className="h-4 w-4" />} onClick={() => void generate(m)}>{plan ? `Recovery plan (${plan.status})` : 'Generate recovery plan'}</Button>}
+          {canEdit && m.match_date <= today && m.status !== 'Cancelled' && <Button size="sm" variant="secondary" icon={<Timer className="h-4 w-4" />} onClick={() => setMinutesFor(m)}>Minutes played{caps.viewMedical ? ' → recovery' : ''}</Button>}
           {!caps.viewMedical && plan?.status === 'Approved' && <Button size="sm" variant="secondary" onClick={() => navigate(`/recovery/plans/${plan.id}`)}>Recovery plan</Button>}
           {canEdit && <Button size="sm" variant="ghost" icon={<Pencil className="h-4 w-4" />} onClick={() => setEdit(m)}>Edit</Button>}
           {canEdit && <Button size="sm" variant="ghost" icon={<Trash2 className="h-4 w-4" />} onClick={() => setDel(m)}>Delete</Button>}
@@ -94,6 +99,7 @@ export default function MatchesPage() {
         </>
       )}
       {edit && <MatchModal value={edit} onClose={() => setEdit(null)} onSaved={() => { setEdit(null); void matches.reload(); }} readOnly={!canEdit} />}
+      {minutesFor && <MinutesModal match={minutesFor} all={all} onClose={() => setMinutesFor(null)} onDone={(planId) => { setMinutesFor(null); void matches.reload(); void plans.reload(); if (planId) navigate(`/recovery/plans/${planId}`); }} />}
       <ConfirmDialog open={!!del} title="Delete match" danger confirmLabel="Delete" message={`Delete the match against ${del?.opponent}? Its recovery plan is deleted too.`}
         onCancel={() => setDel(null)} onConfirm={() => { const m = del!; setDel(null); void api.deleteMatch(m.id).then(() => { toast.success('Match deleted'); void matches.reload(); void plans.reload(); }).catch((e) => toast.error((e as Error).message)); }} />
     </div>
@@ -160,6 +166,90 @@ function MatchModal({ value, onClose, onSaved, readOnly }: { value: Partial<Matc
         </Grid>
         <Field label="Notes"><Textarea rows={2} value={f.notes ?? ''} onChange={(e) => set('notes', e.target.value)} /></Field>
       </fieldset>
+    </Modal>
+  );
+}
+
+const WARM_UP = 20;
+type Row = Pick<Participation, 'player_id' | 'status' | 'minutes_played' | 'rpe'>;
+
+/** After a match: minutes played + RPE per player, then an individualised recovery proposal. */
+function MinutesModal({ match, all, onClose, onDone }: { match: Match; all: Match[]; onClose: () => void; onDone: (planId: string | null) => void }) {
+  const { caps } = useAuth();
+  const toast = useToast();
+  const { players } = useReference();
+  const active = players.filter((p) => p.status === 'active');
+  const existing = useAsync(() => matchParticipation(match), [match.id]);
+  const [rows, setRows] = useState<Record<string, Row> | null>(null);
+  const [saving, setSaving] = useState(false);
+  if (existing.data && !rows) {
+    setRows(Object.fromEntries(active.map((p) => {
+      const e = existing.data!.part.find((x) => x.player_id === p.id);
+      return [p.id, e ? { player_id: p.id, status: e.status, minutes_played: e.minutes_played, rpe: e.rpe } : { player_id: p.id, status: 'Full', minutes_played: null, rpe: null }];
+    })));
+  }
+  const setRow = (pid: string, patch: Partial<Row>) => setRows((r) => ({ ...r!, [pid]: { ...r![pid], ...patch } }));
+  const fillRpe = async () => {
+    try {
+      const w = (await api.listWellness(match.match_date, addDays(match.match_date, 1))).filter((r) => r.kind === 'post' && r.rpe != null);
+      let n = 0; for (const r of w) if (rows?.[r.player_id]) { setRow(r.player_id, { rpe: r.rpe }); n++; }
+      toast.success(n ? `RPE filled for ${n} athlete(s) from their post-match questionnaire` : 'No post-match questionnaires with RPE yet');
+    } catch (e) { toast.error((e as Error).message); }
+  };
+  const save = async (propose: boolean) => {
+    if (!rows) return;
+    setSaving(true);
+    try {
+      const list = Object.values(rows);
+      const counts = (r: Row) => ['Full', 'Modified', 'Individual'].includes(r.status);
+      const part = list.map((r) => {
+        const played = counts(r) && (r.minutes_played ?? 0) > 0;
+        return { ...r, duration_minutes: counts(r) ? WARM_UP + (r.minutes_played ?? 0) : 0, rpe: counts(r) ? (r.rpe ?? (played ? null : 3)) : null };
+      });
+      const session = await api.saveTraining({ id: existing.data?.sessionId ?? undefined, session_date: match.match_date, start_time: match.match_time, session_type: 'Match', duration_minutes: WARM_UP + 40,
+        planned_rpe: 8, season_phase: 'In-season', match_id: match.id, notes: `Match vs ${match.opponent}` }, part);
+      if (match.status === 'Scheduled') await api.saveMatch({ id: match.id, status: 'Played' }).catch(() => undefined);
+      if (!propose) { toast.success('Minutes saved'); return onDone(null); }
+      const saved = await api.listParticipation([session.id]);
+      const r = await proposeIndividualRecovery(match, all, saved);
+      toast.success(r.created ? 'Minutes saved – individualised recovery plan proposed for your review' : r.approved ? 'Minutes saved – the approved plan was updated per player, please re-check it' : 'Minutes saved – recovery plan individualised per player');
+      onDone(r.planId);
+    } catch (e) { toast.error((e as Error).message); } finally { setSaving(false); }
+  };
+  return (
+    <Modal open onClose={onClose} size="xl" title={`Minutes played – vs ${match.opponent} (${match.match_date})`}
+      footer={<><Button variant="secondary" onClick={onClose}>Cancel</Button>
+        <Button variant={caps.viewMedical ? 'secondary' : 'primary'} loading={saving} onClick={() => void save(false)}>Save minutes</Button>
+        {caps.viewMedical && <Button loading={saving} icon={<Wand2 className="h-4 w-4" />} onClick={() => void save(true)}>Save &amp; propose recovery</Button>}</>}>
+      {existing.loading || !rows ? <Spinner /> : (
+        <div className="space-y-3">
+          <p className="text-xs text-neutral-600">Enter each player's minutes on court and match RPE (1–10). Load = RPE × ({WARM_UP} min warm-up + minutes played). Players who did not play keep RPE 3 for the warm-up unless you enter one.
+            {caps.viewMedical ? ' The recovery proposal is individualised: high load (≥ 25 min or ≥ 600 AU) → full recovery; 10–24 min → light recovery + top-up; < 10 min / did not play → compensatory conditioning; injuries and medical restrictions (e.g. ice bath contraindicated) are respected.' : ' The medical team will receive the data to individualise recovery.'}</p>
+          {caps.viewMedical && <Button size="sm" variant="secondary" icon={<Wand2 className="h-4 w-4" />} onClick={() => void fillRpe()}>Fill RPE from post-match questionnaires</Button>}
+          <div className="max-h-[55vh] overflow-auto rounded-xl border">
+            <table className="w-full text-sm">
+              <thead className="sticky top-0 bg-neutral-50 text-xs text-neutral-500"><tr><th className="p-2 text-left">Player</th><th className="p-2 text-left">Status</th><th className="p-2 text-left">Minutes</th><th className="p-2 text-left">RPE</th><th className="p-2 text-left">Load</th><th className="p-2 text-left">Band</th></tr></thead>
+              <tbody>{active.map((p) => {
+                const r = rows[p.id];
+                const counts = ['Full', 'Modified', 'Individual'].includes(r.status);
+                const load = counts && r.rpe ? r.rpe * (WARM_UP + (r.minutes_played ?? 0)) : null;
+                const band = loadBand({ status: r.status, minutes_played: r.minutes_played, rpe: r.rpe, session_load: load });
+                return (
+                  <tr key={p.id} className="border-t">
+                    <td className="p-2 font-medium" dir="auto">{p.full_name}</td>
+                    <td className="p-1"><select value={r.status} onChange={(e) => setRow(p.id, { status: e.target.value as Row['status'] })} className="rounded-lg border px-2 py-1">
+                      {[['Full', 'In squad'], ['Injured', 'Injured'], ['Absent', 'Not in squad'], ['Excused', 'Excused']].map(([v, l]) => <option key={v} value={v}>{l}</option>)}</select></td>
+                    <td className="p-1"><input type="number" min={0} max={60} disabled={!counts} value={r.minutes_played ?? ''} onChange={(e) => setRow(p.id, { minutes_played: e.target.value === '' ? null : Number(e.target.value) })} className="w-20 rounded-lg border px-2 py-1" /></td>
+                    <td className="p-1"><input type="number" min={1} max={10} disabled={!counts} value={r.rpe ?? ''} onChange={(e) => setRow(p.id, { rpe: e.target.value === '' ? null : Number(e.target.value) })} className="w-16 rounded-lg border px-2 py-1" /></td>
+                    <td className="p-2 text-xs">{load ?? '—'}</td>
+                    <td className="p-2">{counts ? <Badge color={BAND_COLOR[band]}>{band}</Badge> : <span className="text-xs text-neutral-400">—</span>}</td>
+                  </tr>
+                );
+              })}</tbody>
+            </table>
+          </div>
+        </div>
+      )}
     </Modal>
   );
 }

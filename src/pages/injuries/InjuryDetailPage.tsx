@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
+import { RehabProposalCard } from '../../components/RehabProposalCard';
+import { proposalToProgramme } from '../../lib/rehabAdvisor';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { Activity, BadgeCheck, ClipboardList, FileText, Flag, HeartPulse, Pencil, Pill, Plus, Search, Stethoscope } from 'lucide-react';
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
@@ -19,7 +21,7 @@ import { DocumentsPanel } from '../../components/DocumentsPanel';
 import { FollowupModal } from '../../components/FollowupForm';
 import { useReportPreview } from '../../components/PdfPreview';
 
-type Tab = 'overview' | 'timeline' | 'followups' | 'treatments' | 'rehab' | 'rtp' | 'documents';
+type Tab = 'overview' | 'timeline' | 'followups' | 'treatments' | 'rehab' | 'rtp' | 'documents' | 'protocol';
 
 export default function InjuryDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -31,6 +33,7 @@ export default function InjuryDetailPage() {
   const [fuOpen, setFuOpen] = useState(params.get('followup') === '1');
   const [txOpen, setTxOpen] = useState(false);
   const [rehabOpen, setRehabOpen] = useState(false);
+  const [rehabPrefill, setRehabPrefill] = useState<ReturnType<typeof proposalToProgramme> | null>(null);
   const [statusOpen, setStatusOpen] = useState(false);
   const pdf = useReportPreview();
 
@@ -80,6 +83,7 @@ export default function InjuryDetailPage() {
         { id: 'overview', label: 'Injury Details' }, { id: 'timeline', label: 'Injury Timeline' }, { id: 'followups', label: 'Follow-ups', count: followups.length },
         { id: 'treatments', label: 'Treatments', count: treatments.length }, { id: 'rehab', label: 'Rehabilitation', count: rehab.length },
         { id: 'rtp', label: 'Return to Play', count: rtp.length }, { id: 'documents', label: 'Documents' },
+        ...(caps.viewMedical ? [{ id: 'protocol' as Tab, label: 'Suggested protocol' }] : []),
       ]} />
 
       {tab === 'overview' && (
@@ -129,11 +133,12 @@ export default function InjuryDetailPage() {
           </Table></div>
         </Card>
       )}
+      {tab === 'protocol' && caps.viewMedical && <RehabProposalCard injury={i} onUse={(pre) => { setRehabPrefill(pre); setRehabOpen(true); }} onTreatmentAdded={() => void q.reload()} />}
       {tab === 'documents' && <Card title="Injury Documents & Imaging"><DocumentsPanel playerId={i.player_id} injuryId={i.id} /></Card>}
 
       <FollowupModal injury={i} open={fuOpen} previous={followups[followups.length - 1] ?? null} onClose={() => setFuOpen(false)} onSaved={() => { setFuOpen(false); setTab('followups'); void q.reload(); }} />
       <TreatmentModal open={txOpen} injuryId={i.id} injuryDate={i.injury_date} onClose={() => setTxOpen(false)} onSaved={() => { setTxOpen(false); void q.reload(); }} />
-      <StartRehabModal open={rehabOpen} injuryId={i.id} playerId={i.player_id} onClose={() => setRehabOpen(false)} onSaved={(pid) => { setRehabOpen(false); toast.success('Rehabilitation programme started'); navigate(`/rehabilitation/${pid}`); }} />
+      <StartRehabModal key={rehabPrefill ? 'pre' : 'blank'} prefill={rehabPrefill} open={rehabOpen} injuryId={i.id} playerId={i.player_id} onClose={() => { setRehabOpen(false); setRehabPrefill(null); }} onSaved={(pid) => { setRehabOpen(false); toast.success('Rehabilitation programme started'); navigate(`/rehabilitation/${pid}`); }} />
       <StatusModal open={statusOpen} current={i.status} onClose={() => setStatusOpen(false)} onSave={async (status, notes) => {
         try { await api.updateInjuryStatus(i.id, status, notes ? { closure_notes: notes } : {}); toast.success('Injury status updated'); setStatusOpen(false); void q.reload(); }
         catch (e) { toast.error((e as Error).message); }
@@ -240,9 +245,9 @@ function TreatmentModal({ open, injuryId, injuryDate, onClose, onSaved }: { open
   );
 }
 
-function StartRehabModal({ open, injuryId, playerId, onClose, onSaved }: { open: boolean; injuryId: string; playerId: string; onClose: () => void; onSaved: (id: string) => void }) {
+function StartRehabModal({ open, injuryId, playerId, onClose, onSaved, prefill }: { open: boolean; injuryId: string; playerId: string; onClose: () => void; onSaved: (id: string) => void; prefill?: { current_phase: string; goals: string; exercises: string; training_load: string } | null }) {
   const toast = useToast();
-  const [f, setF] = useState({ start_date: todayISO(), current_phase: REHAB_PHASES[0] as string, goals: '', exercises: '', training_load: '' });
+  const [f, setF] = useState({ start_date: todayISO(), current_phase: REHAB_PHASES[0] as string, goals: '', exercises: '', training_load: '', ...(prefill ?? {}) });
   const [saving, setSaving] = useState(false);
   const save = async () => {
     if (!f.goals.trim()) return toast.error('State the rehabilitation goals');
@@ -260,6 +265,7 @@ function StartRehabModal({ open, injuryId, playerId, onClose, onSaved }: { open:
         <Field label="Rehabilitation goals" required><Textarea value={f.goals} onChange={(e) => setF({ ...f, goals: e.target.value })} /></Field>
         <Field label="Exercises"><Textarea value={f.exercises} onChange={(e) => setF({ ...f, exercises: e.target.value })} /></Field>
         <Field label="Training load"><Input value={f.training_load} onChange={(e) => setF({ ...f, training_load: e.target.value })} /></Field>
+        {prefill && <p className="rounded-lg bg-amber-50 p-2 text-xs text-amber-900">Pre-filled from the suggested protocol – review and edit before starting. The athlete sees the goals and exercises in the app.</p>}
         <p className="text-xs text-neutral-500">The injury status will be set to "Under Rehabilitation".</p>
       </div>
     </Modal>
