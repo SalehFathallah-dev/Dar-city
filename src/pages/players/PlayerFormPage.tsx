@@ -8,7 +8,9 @@ import { useToast } from '../../context/ToastContext';
 import { DOMINANT_HANDS, MAX_PHOTO_BYTES, POSITIONS } from '../../lib/constants';
 import { bmiCategory, calculateAge, calculateBMI, todayISO } from '../../lib/format';
 import type { EmergencyContact, Player } from '../../lib/types';
-import { Button, Field, FormSection, Grid, Input, PageHeader, PlayerAvatar, SegmentedControl, Select, Spinner, Textarea } from '../../components/ui';
+import { Button, Checkbox, Field, FormSection, Grid, Input, PageHeader, PlayerAvatar, SegmentedControl, Select, Spinner, Textarea } from '../../components/ui';
+import { useAuth } from '../../context/AuthContext';
+import { CredentialsModal, type Credential } from '../../components/CredentialsModal';
 
 type Form = {
   full_name: string; date_of_birth: string; nationality: string; phone: string; email: string; address: string;
@@ -48,6 +50,9 @@ export default function PlayerFormPage() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(!!id);
   const [saving, setSaving] = useState(false);
+  const { caps } = useAuth();
+  const [createAccount, setCreateAccount] = useState(true);
+  const [creds, setCreds] = useState<{ items: Credential[]; next: string } | null>(null);
   const [categories, setCategories] = useState<string[]>([]);
   useEffect(() => {
     void api.listCategories().then((c) => {
@@ -98,6 +103,13 @@ export default function PlayerFormPage() {
       }
       await reload();
       toast.success(id ? 'Player information updated' : `Player registered with ID ${saved.player_code}`);
+      if (!id && createAccount && caps.manageUsers) {
+        try {
+          const acc = await api.provisionAccount({ player_id: saved.id });
+          setCreds({ items: [{ full_name: acc.full_name, role: acc.role, username: acc.username, password: acc.password, phone: form.phone }], next: `/players/${saved.id}` });
+          return;
+        } catch (err) { toast.error(`Player saved, but the app account was not created: ${(err as Error).message}`); }
+      }
       navigate(`/players/${saved.id}`);
     } catch (err) { toast.error((err as Error).message); } finally { setSaving(false); }
   };
@@ -149,11 +161,18 @@ export default function PlayerFormPage() {
             <Field label="Player Status"><Select value={form.status} onChange={(e) => set('status')(e.target.value)} options={[{ value: 'active', label: 'Active' }, { value: 'inactive', label: 'Inactive' }, { value: 'archived', label: 'Archived' }]} /></Field>
           </Grid>
         </FormSection>
+        {!id && caps.manageUsers && (
+          <div className="rounded-2xl border border-neutral-200 bg-white p-4">
+            <Checkbox label="Create the player's app account automatically" checked={createAccount} onChange={setCreateAccount}
+              description="A username (from the player ID) and a password are generated and shown to you after saving, ready to send by WhatsApp." />
+          </div>
+        )}
         <div className="sticky bottom-20 z-20 flex justify-end gap-2 rounded-2xl border border-neutral-200 bg-white/95 p-3 shadow-lg backdrop-blur lg:bottom-4">
           <Button variant="secondary" onClick={() => navigate(-1)}>Cancel</Button>
           <Button icon={<Save className="h-4 w-4" />} loading={saving} onClick={save}>{id ? 'Save Changes' : 'Register Player'}</Button>
         </div>
       </div>
+      {creds && <CredentialsModal items={creds.items} onClose={() => navigate(creds.next)} />}
     </div>
   );
 }

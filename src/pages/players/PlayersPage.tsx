@@ -1,6 +1,8 @@
 import { useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Archive, ArchiveRestore, Pencil, UserPlus, Users } from 'lucide-react';
+import { Archive, ArchiveRestore, KeyRound, Pencil, UserPlus, Users } from 'lucide-react';
+import { useAsync } from '../../hooks/useAsync';
+import { CredentialsModal, type Credential } from '../../components/CredentialsModal';
 import { useReference } from '../../context/ReferenceContext';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
@@ -23,6 +25,21 @@ export default function PlayersPage() {
   const categories = useMemo(() => [...new Set(players.map((p) => p.team_category))].sort(), [players]);
   const [target, setTarget] = useState<{ p: Player; to: Player['status'] } | null>(null);
   const [busy, setBusy] = useState(false);
+  const accounts = useAsync(() => (caps.manageUsers ? api.listAthleteAccounts() : Promise.resolve([])), [caps.manageUsers]);
+  const withoutAccount = players.filter((p) => p.status === 'active' && !(accounts.data ?? []).some((a) => a.player_id === p.id));
+  const [confirmAccounts, setConfirmAccounts] = useState(false);
+  const [provisioning, setProvisioning] = useState(false);
+  const [creds, setCreds] = useState<Credential[]>([]);
+  const createAccounts = async () => {
+    setConfirmAccounts(false); setProvisioning(true);
+    const out: Credential[] = []; let failed = 0;
+    for (const p of withoutAccount) {
+      try { const a = await api.provisionAccount({ player_id: p.id }); out.push({ full_name: a.full_name, role: a.role, username: a.username, password: a.password, phone: p.phone }); }
+      catch { failed += 1; }
+    }
+    setProvisioning(false); setCreds(out); void accounts.reload();
+    if (failed) toast.error(`${failed} account(s) could not be created`);
+  };
 
   const filtered = useMemo(() => players.filter((p) => {
     const s = q.trim().toLowerCase();
@@ -48,7 +65,14 @@ export default function PlayersPage() {
   return (
     <div>
       <PageHeader title="Players" subtitle="Team roster and player registration" icon={<Users className="h-6 w-6" />}
-        actions={caps.managePlayers && <Button icon={<UserPlus className="h-4 w-4" />} onClick={() => navigate('/players/new')}>Add Player</Button>} />
+        actions={<div className="flex flex-wrap gap-2">
+          {caps.manageUsers && withoutAccount.length > 0 && <Button variant="secondary" loading={provisioning} icon={<KeyRound className="h-4 w-4" />} onClick={() => setConfirmAccounts(true)}>Create app accounts ({withoutAccount.length})</Button>}
+          {caps.managePlayers && <Button icon={<UserPlus className="h-4 w-4" />} onClick={() => navigate('/players/new')}>Add Player</Button>}
+        </div>} />
+      <ConfirmDialog open={confirmAccounts} title="Create app accounts" confirmLabel="Create"
+        message={`Create app accounts for ${withoutAccount.length} active player(s) who do not have one? A username and password are generated for each and shown once, ready to send by WhatsApp.`}
+        onConfirm={() => void createAccounts()} onCancel={() => setConfirmAccounts(false)} />
+      <CredentialsModal items={creds} onClose={() => setCreds([])} />
       <Card>
         <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
           <SearchInput value={q} onChange={setQ} placeholder="Name, ID, jersey, nationality…" />

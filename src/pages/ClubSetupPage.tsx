@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Layers, Pencil, Plus, Trash2, Users } from 'lucide-react';
+import { KeyRound, Layers, Pencil, Plus, Trash2, UserPlus, Users } from 'lucide-react';
+import { CredentialsModal, type Credential } from '../components/CredentialsModal';
 import * as api from '../lib/api';
 import { useAsync } from '../hooks/useAsync';
 import { useClub } from '../context/ClubContext';
@@ -78,16 +79,50 @@ function StaffCard() {
   const cats = useAsync(() => api.listCategories(), []);
   const [edit, setEdit] = useState<Partial<StaffMember> | null>(null);
   const [saving, setSaving] = useState(false);
+  const [createAccount, setCreateAccount] = useState(true);
+  const [creds, setCreds] = useState<Credential[]>([]);
+  const [busy, setBusy] = useState<string | null>(null);
+  const toCred = (a: api.ProvisionedAccount, phone?: string | null): Credential => ({ full_name: a.full_name, role: a.role, username: a.username, password: a.password, phone });
   const save = async () => {
     if (!edit?.full_name || edit.full_name.trim().length < 2) return toast.error('Enter the full name');
     setSaving(true);
-    try { await api.saveStaff(edit); setEdit(null); void list.reload(); toast.success('Staff member saved'); }
-    catch (e) { toast.error((e as Error).message); } finally { setSaving(false); }
+    try {
+      const saved = await api.saveStaff(edit);
+      const isNew = !edit.id;
+      setEdit(null); void list.reload(); toast.success('Staff member saved');
+      if (isNew && createAccount) {
+        try { setCreds([toCred(await api.provisionAccount({ staff_member_id: saved.id }), saved.phone)]); void list.reload(); }
+        catch (e) { toast.error(`Saved, but the app account was not created: ${(e as Error).message}`); }
+      }
+    } catch (e) { toast.error((e as Error).message); } finally { setSaving(false); }
+  };
+  const createFor = async (s: StaffMember) => {
+    setBusy(s.id);
+    try { setCreds([toCred(await api.provisionAccount({ staff_member_id: s.id }), s.phone)]); void list.reload(); }
+    catch (e) { toast.error((e as Error).message); } finally { setBusy(null); }
+  };
+  const newPassword = async (s: StaffMember) => {
+    if (!s.profile_id) return;
+    setBusy(s.id);
+    try { const r = await api.generateNewPassword(s.profile_id); setCreds([{ full_name: s.full_name, role: s.app_role, username: r.username, password: r.password, phone: s.phone }]); }
+    catch (e) { toast.error((e as Error).message); } finally { setBusy(null); }
+  };
+  const createAll = async () => {
+    const todo = (list.data ?? []).filter((s) => s.is_active && !s.profile_id);
+    setBusy('all');
+    const out: Credential[] = []; let failed = 0;
+    for (const s of todo) { try { out.push(toCred(await api.provisionAccount({ staff_member_id: s.id }), s.phone)); } catch { failed += 1; } }
+    setBusy(null); void list.reload(); setCreds(out);
+    if (failed) toast.error(`${failed} account(s) could not be created`);
   };
   const rows = list.data ?? [];
+  const without = rows.filter((s) => s.is_active && !s.profile_id).length;
   return (
     <Card title={<span className="flex items-center gap-2"><Users className="h-5 w-5 text-brand-gold" /> Staff register</span>} padded={false}
-      actions={<Button size="sm" icon={<Plus className="h-4 w-4" />} onClick={() => { void cats.reload(); setEdit({ app_role: 'head_coach', is_active: true }); }}>Add staff</Button>}>
+      actions={<div className="flex flex-wrap gap-2">
+        {without > 0 && <Button size="sm" variant="secondary" loading={busy === 'all'} icon={<UserPlus className="h-4 w-4" />} onClick={() => void createAll()}>Create accounts ({without})</Button>}
+        <Button size="sm" icon={<Plus className="h-4 w-4" />} onClick={() => { void cats.reload(); setEdit({ app_role: 'head_coach', is_active: true }); }}>Add staff</Button>
+      </div>}>
       {list.loading ? <Spinner /> : list.error ? <ErrorBlock message={list.error} /> : rows.length === 0 ? (
         <div className="p-5"><EmptyState title="No staff yet" description="Add coaches, managers, physiotherapists… They can then create an account in the app, choose their name and you approve them." /></div>
       ) : (
@@ -97,7 +132,9 @@ function StaffCard() {
               <Td><p className="font-semibold">{s.full_name}</p><p className="text-xs text-neutral-500">{s.title}</p></Td>
               <Td><Badge color={s.app_role === 'assistant_medical_staff' ? 'orange' : 'beige'}>{ROLE_LABELS[s.app_role]}</Badge></Td>
               <Td>{s.category ?? 'All'}</Td>
-              <Td>{s.profile_id ? <Badge color="green">Linked</Badge> : <span className="text-xs text-neutral-500">Not registered yet</span>}</Td>
+              <Td>{s.profile_id
+                ? <div className="flex flex-wrap items-center gap-2"><Badge color="green">Has account</Badge><Button size="sm" variant="ghost" loading={busy === s.id} icon={<KeyRound className="h-4 w-4" />} onClick={() => void newPassword(s)}>New password</Button></div>
+                : <Button size="sm" variant="secondary" loading={busy === s.id} icon={<UserPlus className="h-4 w-4" />} onClick={() => void createFor(s)}>Create account</Button>}</Td>
               <Td><Button size="sm" variant="ghost" icon={<Pencil className="h-4 w-4" />} onClick={() => { void cats.reload(); setEdit(s); }}>Edit</Button></Td>
             </tr>
           ))}
@@ -119,9 +156,11 @@ function StaffCard() {
             </Grid>
             <Field label="Notes"><Textarea rows={2} value={edit.notes ?? ''} onChange={(e) => setEdit({ ...edit, notes: e.target.value })} /></Field>
             {edit.id && <Checkbox label="Active" checked={!!edit.is_active} onChange={(v) => setEdit({ ...edit, is_active: v })} description="Inactive staff cannot be chosen when registering." />}
+            {!edit.id && <Checkbox label="Create the app account automatically" checked={createAccount} onChange={setCreateAccount} description="A username by category (e.g. coach.hlal1) and a password are generated and shown after saving." />}
           </div>
         )}
       </Modal>
+      <CredentialsModal items={creds} onClose={() => setCreds([])} />
     </Card>
   );
 }

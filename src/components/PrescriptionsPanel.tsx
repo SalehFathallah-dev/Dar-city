@@ -9,6 +9,7 @@ import { addDays, formatDate, todayISO } from '../lib/format';
 import { PRESCRIPTION_KINDS, WEEKDAYS } from '../lib/constants';
 import type { AdherenceRow, Injury, Prescription } from '../lib/types';
 import { Badge, Button, Card, Checkbox, EmptyState, ErrorBlock, Field, Grid, Input, Modal, Select, Spinner, Table, Td, Textarea } from './ui';
+import { CredentialsModal, type Credential } from './CredentialsModal';
 
 const ADHERENCE_DAYS = 14;
 
@@ -171,25 +172,24 @@ function AthleteAccountCard({ playerId }: { playerId: string }) {
   const toast = useToast();
   const accounts = useAsync(() => (caps.manageUsers ? api.listAthleteAccounts() : Promise.resolve([])), [caps.manageUsers]);
   const acc = (accounts.data ?? []).find((a) => a.player_id === playerId);
-  const [mode, setMode] = useState<'create' | 'reset' | null>(null);
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const [busy, setBusy] = useState(false);
+  const [busy, setBusy] = useState<string | null>(null);
+  const [creds, setCreds] = useState<Credential[]>([]);
   if (!caps.manageUsers) return null;
-  const submit = async () => {
-    if (password.length < 8) return toast.error('Password must have at least 8 characters');
-    setBusy(true);
+  const create = async () => {
+    setBusy('create');
     try {
-      if (mode === 'create') {
-        if (!/^[a-z0-9._-]{3,30}$/i.test(username)) { toast.error('Username: 3–30 letters/numbers, no spaces'); return; }
-        await api.createAthleteAccount(playerId, username.toLowerCase(), password);
-        toast.success(`Account created. Username: ${username.toLowerCase()}`);
-      } else if (acc) {
-        await api.resetUserPassword(acc.user_id, password);
-        toast.success('Password changed');
-      }
-      setMode(null); setPassword(''); void accounts.reload();
-    } catch (e) { toast.error((e as Error).message); } finally { setBusy(false); }
+      const a = await api.provisionAccount({ player_id: playerId });
+      setCreds([{ full_name: a.full_name, role: a.role, username: a.username, password: a.password }]);
+      void accounts.reload();
+    } catch (e) { toast.error((e as Error).message); } finally { setBusy(null); }
+  };
+  const newPassword = async () => {
+    if (!acc) return;
+    setBusy('reset');
+    try {
+      const r = await api.generateNewPassword(acc.user_id);
+      setCreds([{ full_name: acc.full_name, role: 'athlete', username: r.username, password: r.password }]);
+    } catch (e) { toast.error((e as Error).message); } finally { setBusy(null); }
   };
   const setActive = async (active: boolean) => {
     if (!acc) return;
@@ -200,24 +200,18 @@ function AthleteAccountCard({ playerId }: { playerId: string }) {
     <Card title={<span className="flex items-center gap-2"><Smartphone className="h-5 w-5 text-brand-gold" /> Player app account</span>}>
       {accounts.loading ? <Spinner /> : acc ? (
         <div className="flex flex-wrap items-center gap-3">
-          <div className="flex-1 text-sm">Username: <b>{acc.email.replace('@dsf.local', '')}</b> {acc.is_active ? <Badge color="green">Active</Badge> : <Badge color="red">Disabled</Badge>}
-            <p className="text-xs text-neutral-500">The player signs in with this username on the same app and sees only their own programme, medications and supplements.</p></div>
-          <Button size="sm" variant="secondary" icon={<KeyRound className="h-4 w-4" />} onClick={() => setMode('reset')}>New password</Button>
+          <div className="flex-1 text-sm">Username: <b className="font-mono">{acc.email.replace('@dsf.local', '')}</b> {acc.is_active ? <Badge color="green">Active</Badge> : <Badge color="red">Disabled</Badge>}
+            <p className="text-xs text-neutral-500">The player signs in with this username and sees only their own information.</p></div>
+          <Button size="sm" variant="secondary" loading={busy === 'reset'} icon={<KeyRound className="h-4 w-4" />} onClick={() => void newPassword()}>New password</Button>
           <Button size="sm" variant={acc.is_active ? 'ghost' : 'secondary'} icon={acc.is_active ? <X className="h-4 w-4" /> : <Check className="h-4 w-4" />} onClick={() => void setActive(!acc.is_active)}>{acc.is_active ? 'Disable' : 'Enable'}</Button>
         </div>
       ) : (
         <div className="flex flex-wrap items-center gap-3">
-          <p className="flex-1 text-sm text-neutral-600">This player has no app account yet. Create one so they can see their programme and confirm their doses.</p>
-          <Button size="sm" icon={<UserPlus className="h-4 w-4" />} onClick={() => setMode('create')}>Create account</Button>
+          <p className="flex-1 text-sm text-neutral-600">No app account yet. One tap creates it with a generated username and password.</p>
+          <Button size="sm" loading={busy === 'create'} icon={<UserPlus className="h-4 w-4" />} onClick={() => void create()}>Create account</Button>
         </div>
       )}
-      <Modal open={!!mode} onClose={() => setMode(null)} title={mode === 'create' ? 'Create player account' : 'Set a new password'}
-        footer={<><Button variant="secondary" onClick={() => setMode(null)}>Cancel</Button><Button loading={busy} onClick={submit}>Save</Button></>}>
-        <div className="space-y-4">
-          {mode === 'create' && <Field label="Username" hint="Letters and numbers, e.g. ali7"><Input autoCapitalize="none" value={username} onChange={(e) => setUsername(e.target.value.trim())} /></Field>}
-          <Field label="Password" hint="At least 8 characters – give it to the player privately"><Input value={password} onChange={(e) => setPassword(e.target.value)} /></Field>
-        </div>
-      </Modal>
+      <CredentialsModal items={creds} onClose={() => setCreds([])} title={creds.length && acc ? 'New password generated' : undefined} />
     </Card>
   );
 }

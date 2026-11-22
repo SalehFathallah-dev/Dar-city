@@ -697,3 +697,14 @@ export async function sendAnnouncement(kind: 'announcement' | 'instruction', tit
 export async function listAnnouncements(): Promise<Announcement[]> {
   return unwrap(await supabase.from('announcements').select('*').eq('club_id', requireClub()).order('created_at', { ascending: false }).limit(100));
 }
+
+// ---------------- Generated app accounts ----------------
+export interface ProvisionedAccount { id: string; username: string; password: string; full_name: string; role: string }
+/** Creates the app account of a player or staff member with a generated username and password (approved immediately). */
+export async function provisionAccount(target: { player_id: string } | { staff_member_id: string }): Promise<ProvisionedAccount> {
+  return adminCall({ action: 'provision', ...target });
+}
+/** Generates a new password for an account and returns it once. */
+export async function generateNewPassword(userId: string): Promise<{ username: string; password: string }> {
+  return adminCall({ action: 'reset_password', user_id: userId });
+}

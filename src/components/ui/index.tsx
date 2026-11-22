@@ -28,7 +28,7 @@ export function Button({ variant = 'primary', size = 'md', loading, icon, childr
 // ---------------------------------------------------------------- Layout bits
 export function Card({ children, className, title, actions, padded = true }: { children: ReactNode; className?: string; title?: ReactNode; actions?: ReactNode; padded?: boolean }) {
   return (
-    <section className={clsx('rounded-2xl border border-neutral-200/80 bg-white shadow-card animate-fade-in', className)}>
+    <section className={clsx('min-w-0 rounded-2xl border border-neutral-200/80 bg-white shadow-card animate-fade-in', className)}>
       {(title || actions) && (
         <header className="flex flex-wrap items-center justify-between gap-2 border-b border-neutral-100 px-5 py-3.5">
           <h3 className="text-sm font-bold uppercase tracking-wide text-brand-navy">{title}</h3>
