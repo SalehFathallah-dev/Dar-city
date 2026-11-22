@@ -66,3 +66,15 @@ All new tables: `club_id` derived from the player, RLS, audit trigger, athlete a
 5. **Analytics and reporting** – new PDF/Excel reports, advanced dashboard, travel and emergency module
 
 Each phase: database tests for every permission rule, end-to-end test on the real project, then deployment to Render.
+
+## 6. Progress
+
+| Phase | Status | Notes |
+|---|---|---|
+| 1 Essential | ✅ Done (2026-11-22) | Medical inbox, confidential sharing, wellness questionnaires + baseline flags, notifications, alert centre. Tests: `phase1_tests.sql` + end-to-end |
+| 2 Performance | ✅ Done (2026-11-22) | Matches, training load (sRPE), recovery planner (proposed → approved), recovery sessions + live attendance, restrictions, athlete schedule. Tests: `phase2_tests.sql` + end-to-end |
+| 3 Medical | Next | Examination form extension, investigations, appointments and reminders |
+| 4 Medication & supplements | Planned | |
+| 5 Analytics & reporting | Planned | |
+
+Known limitations: notifications appear when the app is open (no push service); generated recovery recommendations are in English (the physician can edit them in Arabic before approval).
