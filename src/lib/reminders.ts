@@ -20,7 +20,7 @@ function hashId(s: string): number {
   return Math.abs(h) % 2_000_000_000;
 }
 
-export async function syncReminders(portal: AthletePortal): Promise<'scheduled' | 'off' | 'denied' | 'unsupported'> {
+export async function syncReminders(portal: AthletePortal, wellness?: { pre_enabled: boolean; reminder_time: string } | null): Promise<'scheduled' | 'off' | 'denied' | 'unsupported'> {
   if (!isNative()) return 'unsupported';
   const pending = await LocalNotifications.getPending();
   if (pending.notifications.length) await LocalNotifications.cancel({ notifications: pending.notifications.map((n) => ({ id: n.id })) });
@@ -44,6 +44,17 @@ export async function syncReminders(portal: AthletePortal): Promise<'scheduled' 
           extra: { prescriptionId: rx.id, time },
         });
       }
+    }
+  }
+  // Daily wellness questionnaire reminder (every day at the time chosen by the physician).
+  if (wellness?.pre_enabled) {
+    const [hour, minute] = (wellness.reminder_time || '09:00').split(':').map(Number);
+    for (let dow = 1; dow <= 7; dow++) {
+      notifications.push({
+        id: hashId(`wellness|${dow}`), title: '📝 استبيان قبل التدريب',
+        body: 'دقيقة واحدة: كيف نمت وكيف تشعر اليوم؟ افتح التطبيق واملأ الاستبيان.',
+        schedule: { on: { weekday: dow, hour, minute }, allowWhileIdle: true }, extra: { prescriptionId: 'wellness', time: wellness.reminder_time },
+      });
     }
   }
   if (notifications.length) await LocalNotifications.schedule({ notifications: notifications.slice(0, 400) });

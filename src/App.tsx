@@ -43,6 +43,10 @@ const AuditPage = lazy(() => import('./pages/AuditPage'));
 const ResetPasswordPage = lazy(() => import('./pages/ResetPasswordPage'));
 const OverviewPage = lazy(() => import('./pages/OverviewPage'));
 const TeamStatusPage = lazy(() => import('./pages/TeamStatusPage'));
+const InboxPage = lazy(() => import('./pages/inbox/InboxPage'));
+const CaseDetailPage = lazy(() => import('./pages/inbox/CaseDetailPage'));
+const WellnessPage = lazy(() => import('./pages/WellnessPage'));
+const MessagesPage = lazy(() => import('./pages/MessagesPage'));
 const RequestsPage = lazy(() => import('./pages/RequestsPage'));
 const ClubSetupPage = lazy(() => import('./pages/ClubSetupPage'));
 const ClubsPage = lazy(() => import('./pages/clubs/ClubsPage'));
@@ -99,6 +103,10 @@ function ClubScopedApp() {
             <Route path="clubs/:id" element={<ClubProfilePage />} />
             <Route path="clubs/:id/edit" element={<Guard need={(c) => c.manageClubs}><ClubFormPage /></Guard>} />
             <Route index element={<Dashboard />} />
+            <Route path="inbox" element={<Guard need={(c) => c.viewMedical}><InboxPage /></Guard>} />
+            <Route path="inbox/:id" element={<Guard need={(c) => c.viewMedical}><CaseDetailPage /></Guard>} />
+            <Route path="wellness" element={<Guard need={(c) => c.viewMedical}><WellnessPage /></Guard>} />
+            <Route path="messages" element={<Guard need={(c) => c.isPhysician}><MessagesPage /></Guard>} />
             <Route path="team-status" element={<Guard need={(c) => c.viewTeamSummary}><TeamStatusPage /></Guard>} />
             <Route path="requests" element={<Guard need={(c) => c.manageUsers}><RequestsPage /></Guard>} />
             <Route path="club-setup" element={<Guard need={(c) => c.manageUsers}><ClubSetupPage /></Guard>} />

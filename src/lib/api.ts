@@ -4,6 +4,7 @@ import type {
   MedicalDocument, MedicalHistory, Player, Profile, RehabProgram, RehabSession, RtpAssessment, Season,
   TeamAvailabilityRow, Treatment, Prescription, AthletePortal, TeamSummaryRow, AdherenceRow, AthleteAccount,
   ClubCategory, StaffMember, RegistrationRow, MyRegistration, RecoveryView,
+  MedicalCase, CaseMessage, CaseFile, CaseDisclosure, MyCase, StaffCaseRow, WellnessSettings, WellnessResponse, WellnessFlag, AppNotification, Announcement,
 } from './types';
 import { ALLOWED_DOC_TYPES, APP, MAX_DOC_BYTES, MAX_PHOTO_BYTES } from './constants';
 
@@ -593,4 +594,106 @@ export async function decideRegistration(id: string, approve: boolean, note?: st
 // ---------------- Recovery progress (staff) ----------------
 export async function getPlayerRecovery(playerId: string): Promise<RecoveryView> {
   return unwrap(await supabase.rpc('get_player_recovery', { p_player_id: playerId }));
+}
+
+// ================= Phase 1: cases, wellness, notifications =================
+const CASE_PLAYER = 'players(full_name, player_code, jersey_number, position)';
+export async function listCases(opts: { status?: 'open' | 'closed' | 'all'; playerId?: string } = {}): Promise<MedicalCase[]> {
+  let q = supabase.from('medical_cases').select(`*, ${CASE_PLAYER}`).eq('club_id', requireClub()).order('created_at', { ascending: false });
+  if (opts.status === 'open') q = q.neq('status', 'Closed');
+  if (opts.status === 'closed') q = q.eq('status', 'Closed');
+  if (opts.playerId) q = q.eq('player_id', opts.playerId);
+  return unwrap(await q);
+}
+export async function getCase(id: string): Promise<{ c: MedicalCase; messages: CaseMessage[]; files: CaseFile[]; disclosures: CaseDisclosure[] }> {
+  const [c, messages, files, disclosures] = await Promise.all([
+    supabase.from('medical_cases').select(`*, ${CASE_PLAYER}`).eq('id', id).single(),
+    supabase.from('case_messages').select('*').eq('case_id', id).order('created_at'),
+    supabase.from('case_files').select('*').eq('case_id', id).order('created_at'),
+    supabase.from('case_disclosures').select('*').eq('case_id', id).order('created_at', { ascending: false }),
+  ]);
+  void logEvent('VIEW_CASE', 'medical_cases', id);
+  return { c: unwrap(c), messages: unwrap(messages), files: unwrap(files), disclosures: unwrap(disclosures) };
+}
+export async function updateCase(id: string, patch: Partial<MedicalCase>) {
+  const row = clean({ ...patch } as Row);
+  delete row.players;
+  return unwrap(await supabase.from('medical_cases').update(row).eq('id', id).select().single()) as MedicalCase;
+}
+export async function addCaseMessage(caseId: string, kind: 'private_note' | 'request_info' | 'instruction', body: string) {
+  const { data: u } = await supabase.auth.getUser();
+  return unwrap(await supabase.from('case_messages').insert({ case_id: caseId, kind, body, author_id: u.user?.id }).select().single());
+}
+export async function createCaseForPlayer(playerId: string, c: Partial<MedicalCase>) {
+  const row = clean({ ...c, player_id: playerId, source: 'staff' } as Row);
+  return unwrap(await supabase.from('medical_cases').insert(row).select().single()) as MedicalCase;
+}
+const CASE_MIME = ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'application/pdf', 'video/mp4', 'video/quicktime'];
+export async function uploadCaseFile(c: { id: string; player_id: string }, file: File) {
+  const type = file.type || 'application/octet-stream';
+  if (!CASE_MIME.includes(type)) throw new Error('Allowed files: photos (JPG/PNG/HEIC), PDF, videos (MP4/MOV).');
+  if (file.size > 25 * 1024 * 1024) throw new Error('File is larger than 25 MB.');
+  const ext = (file.name.split('.').pop() || 'bin').toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 5) || 'bin';
+  const path = `${c.player_id}/${c.id}/${crypto.randomUUID()}.${ext}`;
+  const up = await supabase.storage.from('case-attachments').upload(path, file, { contentType: type, upsert: false });
+  if (up.error) throw new Error(up.error.message);
+  return unwrap(await supabase.rpc('add_case_file', { p_case_id: c.id, p_path: path, p_file_name: file.name.slice(0, 200), p_mime: type, p_size: file.size }));
+}
+export async function getCaseFileBlob(path: string): Promise<Blob> {
+  const { data, error } = await supabase.storage.from('case-attachments').download(path);
+  if (error || !data) throw new Error(error?.message || 'Unable to open file');
+  void logEvent('VIEW_CASE_FILE', 'case_files', path);
+  return data;
+}
+// Athlete
+export async function submitMedicalCase(payload: Record<string, unknown>): Promise<MedicalCase> {
+  return unwrap(await supabase.rpc('submit_medical_case', { p_case: payload }));
+}
+export async function myCases(): Promise<MyCase[]> { return unwrap(await supabase.rpc('my_cases')); }
+export async function athleteCaseReply(caseId: string, body: string) { unwrap(await supabase.rpc('athlete_case_reply', { p_case_id: caseId, p_body: body })); }
+// Staff
+export async function getStaffCaseBoard(clubId: string): Promise<StaffCaseRow[]> { return unwrap(await supabase.rpc('get_staff_case_board', { p_club_id: clubId })); }
+
+// Wellness
+export async function getWellnessSettings(): Promise<WellnessSettings | null> {
+  return unwrap(await supabase.from('wellness_settings').select('*').eq('club_id', requireClub()).maybeSingle());
+}
+export async function saveWellnessSettings(s: Partial<WellnessSettings>) {
+  const row = { ...clean(s as Row), club_id: requireClub() };
+  return unwrap(await supabase.from('wellness_settings').upsert(row, { onConflict: 'club_id' }).select().single());
+}
+export async function listWellness(from: string, to: string, playerId?: string): Promise<WellnessResponse[]> {
+  let q = supabase.from('wellness_responses').select('*').eq('club_id', requireClub()).gte('response_date', from).lte('response_date', to).order('response_date');
+  if (playerId) q = q.eq('player_id', playerId);
+  return unwrap(await q);
+}
+export async function getWellnessFlags(date: string): Promise<WellnessFlag[]> {
+  return unwrap(await supabase.rpc('get_wellness_flags', { p_club_id: requireClub(), p_date: date }));
+}
+export async function submitWellness(kind: 'pre' | 'post', date: string, sessionType: string, answers: Record<string, unknown>) {
+  return unwrap(await supabase.rpc('submit_wellness', { p_kind: kind, p_date: date, p_session_type: sessionType, p: answers }));
+}
+export async function myWellness(from: string, to: string): Promise<{ settings: { pre_enabled: boolean; post_enabled: boolean; reminder_time: string }; responses: WellnessResponse[] }> {
+  return unwrap(await supabase.rpc('my_wellness', { p_from: from, p_to: to }));
+}
+
+// Notifications & announcements
+export async function listNotifications(limit = 50): Promise<AppNotification[]> {
+  return unwrap(await supabase.from('notifications').select('*').order('created_at', { ascending: false }).limit(limit));
+}
+export async function unreadNotificationCount(): Promise<number> {
+  const { count, error } = await supabase.from('notifications').select('id', { count: 'exact', head: true }).is('read_at', null);
+  if (error) throw new Error(error.message);
+  return count ?? 0;
+}
+export async function markNotificationsRead(ids?: string[]) {
+  let q = supabase.from('notifications').update({ read_at: new Date().toISOString() }).is('read_at', null);
+  if (ids?.length) q = q.in('id', ids);
+  unwrap(await q.select('id'));
+}
+export async function sendAnnouncement(kind: 'announcement' | 'instruction', title: string, body: string, playerIds: string[] | null, includeStaff: boolean): Promise<Announcement> {
+  return unwrap(await supabase.rpc('send_announcement', { p_club_id: requireClub(), p_kind: kind, p_title: title, p_body: body, p_player_ids: playerIds, p_include_staff: includeStaff }));
+}
+export async function listAnnouncements(): Promise<Announcement[]> {
+  return unwrap(await supabase.from('announcements').select('*').eq('club_id', requireClub()).order('created_at', { ascending: false }).limit(100));
 }

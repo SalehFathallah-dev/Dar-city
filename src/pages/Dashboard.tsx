@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { AlertCenter } from '../components/AlertCenter';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   Activity, AlertTriangle, BadgeCheck, CalendarClock, ClipboardCheck, Clock, Dumbbell, HeartPulse, ShieldAlert, Stethoscope, UserPlus, Users,
@@ -41,6 +42,7 @@ export default function Dashboard() {
           </div>
         )}
       </div>
+      {caps.viewMedical && <AlertCenter />}
       {caps.viewMedical ? <ClinicalDashboard /> : <StaffDashboard />}
     </div>
   );

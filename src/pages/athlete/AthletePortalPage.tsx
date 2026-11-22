@@ -13,6 +13,12 @@ import { Badge, Button, ErrorBlock, Logo, Spinner, statusColor } from '../../com
 import { ChangePasswordModal } from '../../components/ChangePasswordModal';
 import { cancelAllReminders, remindersWanted, setRemindersWanted, syncReminders } from '../../lib/reminders';
 import { isNative } from '../../lib/native';
+import { NotificationBell } from '../../components/NotificationBell';
+import { ReportIssue } from './ReportIssue';
+import { WellnessForm } from './WellnessForm';
+import { MyCasesSection } from './MyCasesSection';
+import type { MyCase, WellnessResponse } from '../../lib/types';
+import { AlertTriangle, ClipboardList } from 'lucide-react';
 
 const DAYS_BACK = 6;
 type Rx = AthletePortal['prescriptions'][number];
@@ -31,6 +37,15 @@ export default function AthletePortalPage() {
   const [busy, setBusy] = useState<string | null>(null);
   const [pwOpen, setPwOpen] = useState(false);
   const [reminders, setReminders] = useState(remindersWanted());
+  const [cases, setCases] = useState<MyCase[]>([]);
+  const [wellness, setWellness] = useState<{ settings: { pre_enabled: boolean; post_enabled: boolean; reminder_time: string }; responses: WellnessResponse[] } | null>(null);
+  const [reportOpen, setReportOpen] = useState(false);
+  const [formKind, setFormKind] = useState<'pre' | 'post' | null>(null);
+  const loadExtras = useCallback(async () => {
+    const [c, w] = await Promise.all([api.myCases().catch(() => []), api.myWellness(today, today).catch(() => null)]);
+    setCases(c); setWellness(w);
+    return w;
+  }, [today]);
 
   const load = useCallback(async () => {
     try {
@@ -43,13 +58,15 @@ export default function AthletePortalPage() {
 
   useEffect(() => {
     void load().then((p) => {
-      if (p) void syncReminders(p).then((r) => { if (r === 'denied') toast.error('اسمح للتطبيق بالإشعارات حتى تصلك التذكيرات.'); });
+      void loadExtras().then((w) => {
+        if (p) void syncReminders(p, w?.settings).then((r) => { if (r === 'denied') toast.error('اسمح للتطبيق بالإشعارات حتى تصلك التذكيرات.'); });
+      });
     });
     // Refresh when the app comes back to the foreground.
-    const onVis = () => { if (document.visibilityState === 'visible') void load(); };
+    const onVis = () => { if (document.visibilityState === 'visible') { void load(); void loadExtras(); } };
     document.addEventListener('visibilitychange', onVis);
     return () => document.removeEventListener('visibilitychange', onVis);
-  }, [load, toast]);
+  }, [load, loadExtras, toast]);
 
   const rxById = useMemo(() => new Map((data?.prescriptions ?? []).map((r) => [r.id, r])), [data]);
   const dayDoses = useMemo(() => (data?.doses ?? []).filter((d) => d.scheduled_date === day && rxById.has(d.prescription_id))
@@ -76,7 +93,7 @@ export default function AthletePortalPage() {
     setRemindersWanted(on); setReminders(on);
     if (!on) { await cancelAllReminders(); toast.success('تم إيقاف التذكيرات'); return; }
     if (data) {
-      const r = await syncReminders(data);
+      const r = await syncReminders(data, wellness?.settings);
       if (r === 'scheduled') toast.success('تم تفعيل التذكيرات في مواعيد الجرعات');
       else if (r === 'denied') toast.error('اسمح للتطبيق بالإشعارات من إعدادات الهاتف.');
     }
@@ -98,12 +115,34 @@ export default function AthletePortalPage() {
           <p className="truncate font-display text-lg font-bold uppercase text-brand-navy">{p?.full_name ?? profile?.full_name}</p>
           <p className="truncate text-xs text-neutral-500">{[p?.club_short_name, p?.jersey_number != null && `#${p.jersey_number}`, p?.player_code].filter(Boolean).join(' · ')}</p>
         </div>
-        <button onClick={() => void load()} className="rounded-lg p-2 text-neutral-500 hover:bg-neutral-100" aria-label="تحديث"><RefreshCw className="h-5 w-5" /></button>
+        <NotificationBell lang="ar" />
+        <button onClick={() => { void load(); void loadExtras(); }} className="rounded-lg p-2 text-neutral-500 hover:bg-neutral-100" aria-label="تحديث"><RefreshCw className="h-5 w-5" /></button>
         <button onClick={() => setPwOpen(true)} className="rounded-lg p-2 text-neutral-500 hover:bg-neutral-100" aria-label="تغيير كلمة المرور"><KeyRound className="h-5 w-5" /></button>
         <button onClick={() => void signOut()} className="rounded-lg p-2 text-neutral-500 hover:bg-neutral-100" aria-label="خروج"><LogOut className="h-5 w-5" /></button>
       </header>
 
       <main className="mx-auto max-w-xl space-y-4 px-4 pt-4">
+        <button onClick={() => setReportOpen(true)} className="flex w-full items-center justify-center gap-2 rounded-2xl bg-brand-red px-4 py-4 text-lg font-bold text-white shadow-lg shadow-brand-red/25 active:scale-[0.99]">
+          <AlertTriangle className="h-6 w-6" /> الإبلاغ عن مشكلة طبية
+        </button>
+        {wellness && (wellness.settings.pre_enabled || wellness.settings.post_enabled) && (() => {
+          const preDone = wellness.responses.some((r) => r.kind === 'pre' && r.response_date === today);
+          const posts = wellness.responses.filter((r) => r.kind === 'post' && r.response_date === today);
+          return (
+            <section className="rounded-2xl bg-white p-4 shadow-card">
+              <h2 className="mb-3 flex items-center gap-2 font-bold text-brand-navy"><ClipboardList className="h-5 w-5 text-brand-gold" /> استبيانات اليوم</h2>
+              <div className="grid gap-2">
+                {wellness.settings.pre_enabled && (preDone
+                  ? <p className="flex items-center gap-2 rounded-xl bg-emerald-50 p-3 text-sm font-semibold text-emerald-700"><Check className="h-4 w-4" /> استبيان قبل التدريب – تم</p>
+                  : <Button onClick={() => setFormKind('pre')}>املأ استبيان قبل التدريب (دقيقة واحدة)</Button>)}
+                {wellness.settings.post_enabled && (
+                  <Button variant="secondary" onClick={() => setFormKind('post')}>استبيان بعد التدريب{posts.length ? ` (تم ${posts.length})` : ''}</Button>
+                )}
+              </div>
+            </section>
+          );
+        })()}
+        <MyCasesSection cases={cases} onChanged={() => void loadExtras()} />
         {/* Status */}
         <section className="overflow-hidden rounded-2xl bg-brand-navy text-white shadow-card">
           <div className="p-4">
@@ -230,6 +269,8 @@ export default function AthletePortalPage() {
         <p className="pb-4 text-center text-[11px] text-neutral-400">Dr. Saleh Fathullah · Orthopedic & Sports Medicine</p>
       </main>
       <ChangePasswordModal open={pwOpen} onClose={() => setPwOpen(false)} />
+      {reportOpen && <ReportIssue onClose={() => setReportOpen(false)} onDone={() => void loadExtras()} />}
+      {formKind && <WellnessForm kind={formKind} onClose={() => setFormKind(null)} onDone={() => void loadExtras()} />}
     </div>
   );
 }

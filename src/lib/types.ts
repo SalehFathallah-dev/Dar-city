@@ -186,3 +186,40 @@ export interface RecoveryView {
   availability: AthletePortal['availability'];
   episodes: RecoveryEpisode[];
 }
+
+// ---------------- Phase 1 ----------------
+export interface BodyLocation { region: string; side?: 'Left' | 'Right' | 'Center' | null; view: 'front' | 'back' }
+export type CaseStatus = 'New' | 'Under Review' | 'Information Requested' | 'Examination Scheduled' | 'In Treatment' | 'Closed';
+export type CasePriority = 'Routine' | 'Priority' | 'Urgent';
+export type CaseVisibility = 'private' | 'limited' | 'approved';
+export interface MedicalCase {
+  id: string; case_code: string; club_id: string; player_id: string; source: string; category: string; body_locations: BodyLocation[];
+  onset_at: string | null; pain_score: number | null; how_started: string | null; context: string | null; can_continue: boolean | null;
+  affects_movement: boolean | null; description: string | null; athlete_urgent: boolean; priority: CasePriority; status: CaseStatus;
+  diagnosis: string | null; injury_id: string | null; examination_id: string | null; visibility: CaseVisibility; staff_status: string | null;
+  shared_summary: string | null; shared_at: string | null; shared_by: string | null; closed_at: string | null; created_at: string; updated_at: string;
+  players?: { full_name: string; player_code: string; jersey_number: number | null; position: string | null };
+}
+export interface CaseMessage { id: string; case_id: string; kind: 'private_note' | 'request_info' | 'instruction' | 'athlete_reply'; body: string; author_id: string | null; created_at: string }
+export interface CaseFile { id: string; case_id: string; file_path: string; file_name: string; mime_type: string; size_bytes: number; created_at: string }
+export interface CaseDisclosure { id: string; case_id: string; visibility: CaseVisibility; staff_status: string | null; shared_summary: string | null; authorized_by: string | null; created_at: string }
+export interface MyCase {
+  id: string; case_code: string; category: string; body_locations: BodyLocation[]; pain_score: number | null; status: CaseStatus; priority: CasePriority;
+  created_at: string; description: string | null; messages: { kind: CaseMessage['kind']; body: string; created_at: string }[];
+  files: { file_name: string; file_path: string; mime_type: string }[];
+}
+export interface StaffCaseRow { case_id: string; player_id: string; full_name: string; jersey_number: number | null; staff_status: string; shared_summary: string | null; shared_at: string; case_status: string }
+export interface WellnessSettings {
+  club_id: string; pre_enabled: boolean; post_enabled: boolean; reminder_time: string; baseline_days: number; min_baseline: number;
+  fatigue_rise: number; soreness_rise: number; readiness_drop: number; sleep_drop: number; sleep_min: number; high_score: number; missed_days: number;
+}
+export interface WellnessResponse {
+  id: string; club_id?: string; player_id: string; kind: 'pre' | 'post'; response_date: string; session_type: string;
+  sleep_hours: number | null; sleep_quality: number | null; fatigue: number | null; soreness: number | null; energy: number | null; readiness: number | null;
+  unwell: boolean | null; illness_symptoms: string | null; pain: boolean | null; pain_location: string | null; pain_severity: number | null;
+  pain_duration: string | null; pain_new: boolean | null; movement_affected: boolean | null; rpe: number | null; duration_minutes: number | null;
+  session_load: number | null; completed_full: boolean | null; unusual_symptoms: string | null; notes: string | null; created_at: string;
+}
+export interface WellnessFlag { player_id: string; full_name: string; flag: string; detail: string; value: number | null; baseline: number | null }
+export interface AppNotification { id: string; club_id: string | null; kind: string; priority: 'normal' | 'high' | 'urgent'; title: string; body: string | null; link: string | null; created_at: string; read_at: string | null }
+export interface Announcement { id: string; club_id: string; kind: 'announcement' | 'instruction'; title: string; body: string; player_ids: string[] | null; include_staff: boolean; recipients: number; created_at: string }

@@ -3,13 +3,14 @@ import { posLabel } from '../../lib/format';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import clsx from 'clsx';
 import {
-  ClipboardCheck, UserCheck,
+  ClipboardCheck, UserCheck, Inbox, HeartHandshake, Megaphone,
   Activity, BarChart3, CalendarCheck2, ClipboardList, Download, FileStack, FileText, HeartPulse, LayoutDashboard,
   LogOut, Menu, Plus, Search, Settings, Stethoscope, UserPlus, Users, X, Zap, History, BadgeCheck, Footprints, Layers, Shield, KeyRound,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useOnline } from '../../hooks/useOnline';
-import { listRegistrations } from '../../lib/api';
+import { listCases, listRegistrations } from '../../lib/api';
+import { NotificationBell } from '../NotificationBell';
 import { useReference } from '../../context/ReferenceContext';
 import { ROLE_LABELS } from '../../lib/constants';
 import { Button, Logo, PlayerAvatar } from '../ui';
@@ -19,7 +20,7 @@ import { useBrand } from '../../context/BrandContext';
 import { ChangePasswordModal } from '../ChangePasswordModal';
 import type { Capabilities } from '../../lib/permissions';
 
-interface NavItem { to: string; label: string; icon: ReactNode; show: (c: Capabilities) => boolean; badge?: 'requests' }
+interface NavItem { to: string; label: string; icon: ReactNode; show: (c: Capabilities) => boolean; badge?: 'requests' | 'cases' }
 const NAV: { group: string; items: NavItem[] }[] = [
   { group: 'Clubs', items: [
     { to: '/overview', label: 'All Clubs Overview', icon: <Layers className="h-[18px] w-[18px]" />, show: (c) => c.viewOverview },
@@ -30,6 +31,11 @@ const NAV: { group: string; items: NavItem[] }[] = [
     { to: '/team-status', label: 'Team Status & Adherence', icon: <ClipboardCheck className="h-[18px] w-[18px]" />, show: (c) => c.viewTeamSummary },
     { to: '/availability', label: 'Player Availability', icon: <CalendarCheck2 className="h-[18px] w-[18px]" />, show: () => true },
     { to: '/players', label: 'Players', icon: <Users className="h-[18px] w-[18px]" />, show: () => true },
+  ] },
+  { group: 'Medical Inbox', items: [
+    { to: '/inbox', label: 'Medical Inbox', icon: <Inbox className="h-[18px] w-[18px]" />, show: (c) => c.viewMedical, badge: 'cases' },
+    { to: '/wellness', label: 'Athlete Wellness', icon: <HeartHandshake className="h-[18px] w-[18px]" />, show: (c) => c.viewMedical },
+    { to: '/messages', label: 'Messages', icon: <Megaphone className="h-[18px] w-[18px]" />, show: (c) => c.isPhysician },
   ] },
   { group: 'Clinical', items: [
     { to: '/examinations', label: 'Medical Examinations', icon: <Stethoscope className="h-[18px] w-[18px]" />, show: (c) => c.viewMedical },
@@ -59,6 +65,7 @@ export function AppLayout() {
   const location = useLocation();
   const online = useOnline();
   const pending = usePendingRequests(caps.manageUsers);
+  const newCases = useNewCases(caps.viewMedical);
   useEffect(() => setMobileOpen(false), [location.pathname]);
 
   const sidebar = (
@@ -82,6 +89,7 @@ export function AppLayout() {
                     isActive ? 'bg-brand-gold text-white shadow-md shadow-black/20' : 'hover:bg-white/5 hover:text-white')}>
                   {i.icon}<span className="flex-1">{i.label}</span>
                   {i.badge === 'requests' && pending > 0 && <span className="rounded-full bg-brand-red px-2 py-0.5 text-[11px] font-bold text-white">{pending}</span>}
+                  {i.badge === 'cases' && newCases > 0 && <span className="rounded-full bg-brand-red px-2 py-0.5 text-[11px] font-bold text-white">{newCases}</span>}
                 </NavLink>
               ))}
             </div>
@@ -114,6 +122,11 @@ export function AppLayout() {
       )}
       <div className="lg:pl-64">
         <TopBar onMenu={() => setMobileOpen(true)} />
+        {newCases > 0 && !location.pathname.startsWith('/inbox') && (
+          <NavLink to="/inbox" className="flex items-center gap-2 bg-brand-red px-4 py-2 text-sm font-semibold text-white">
+            <Inbox className="h-4 w-4" /> {newCases} new medical complaint{newCases > 1 ? 's' : ''} · بلاغات طبية جديدة
+          </NavLink>
+        )}
         {pending > 0 && location.pathname !== '/requests' && (
           <NavLink to="/requests" className="flex items-center gap-2 bg-brand-gold px-4 py-2 text-sm font-semibold text-white">
             <UserCheck className="h-4 w-4" /> {pending} access request{pending > 1 ? 's' : ''} waiting for your approval · طلبات دخول بانتظار موافقتك
@@ -152,6 +165,7 @@ function TopBar({ onMenu }: { onMenu: () => void }) {
         <div className="min-w-0 flex-1 md:hidden"><div className="max-w-[12rem]"><ClubSwitcher variant="light" /></div></div>
         <div className="hidden flex-1 md:block" />
         <GlobalSearch />
+        <NotificationBell />
         {caps.editMedical || caps.managePlayers ? <QuickActions /> : null}
         <div className="hidden items-center gap-2 border-l border-neutral-200 pl-3 2xl:flex">
           <PlayerAvatar name={profile?.full_name ?? '?'} size={32} />
@@ -290,5 +304,20 @@ function usePendingRequests(enabled: boolean) {
     window.addEventListener('dsf-requests-changed', load);
     return () => { alive = false; clearInterval(t); window.removeEventListener('dsf-requests-changed', load); };
   }, [enabled]);
+  return n;
+}
+
+/** Number of new (unreviewed) complaints in the current club, refreshed every minute. */
+function useNewCases(enabled: boolean) {
+  const [n, setN] = useState(0);
+  const loc = useLocation();
+  useEffect(() => {
+    if (!enabled) return;
+    let alive = true;
+    const load = () => void listCases({ status: 'open' }).then((r) => alive && setN(r.filter((c) => c.status === 'New').length)).catch(() => undefined);
+    load();
+    const t = setInterval(load, 60_000);
+    return () => { alive = false; clearInterval(t); };
+  }, [enabled, loc.pathname]);
   return n;
 }

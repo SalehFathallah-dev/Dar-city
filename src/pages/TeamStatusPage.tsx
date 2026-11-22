@@ -26,6 +26,7 @@ export default function TeamStatusPage() {
   const [period, setPeriod] = useState<(typeof PERIODS)[number]>('7 days');
   const days = periodDays(period);
   const summary = useAsync(() => api.getTeamSummary(clubId!), [clubId]);
+  const shared = useAsync(() => api.getStaffCaseBoard(clubId!), [clubId]);
   const adherence = useAsync(() => api.getTeamAdherence(clubId!, addDays(today, -(days - 1)), today), [clubId, days, today]);
   const [detail, setDetail] = useState<TeamSummaryRow | null>(null);
   const [detailTab, setDetailTab] = useState<'recovery' | 'adherence'>('recovery');
@@ -57,6 +58,21 @@ export default function TeamStatusPage() {
         <StatCard label={`Treatment adherence (${period.toLowerCase()})`} value={team.pct === null ? '—' : `${team.pct}%`} icon={<Pill className="h-5 w-5" />} tone="blue"
           hint={team.due ? `${team.taken}/${team.due} doses confirmed` : 'No doses due'} />
       </div>
+      {(shared.data ?? []).length > 0 && (
+        <Card title="Medical updates shared by the doctor">
+          <ul className="grid gap-2 md:grid-cols-2">
+            {shared.data!.map((u) => (
+              <li key={u.case_id} className="rounded-xl border border-sky-200 bg-sky-50 p-3 text-sm">
+                <div className="flex flex-wrap items-center gap-2"><b>{u.jersey_number != null && `#${u.jersey_number} `}{u.full_name}</b>
+                  <Badge color={u.staff_status === 'Available' ? 'green' : u.staff_status === 'Unavailable' ? 'red' : 'orange'}>{u.staff_status}</Badge>
+                  {u.case_status === 'Closed' && <Badge color="gray">Resolved</Badge>}
+                  <span className="ms-auto text-xs text-neutral-500">{formatDate(u.shared_at)}</span></div>
+                {u.shared_summary && <p className="mt-1 whitespace-pre-line text-neutral-700">{u.shared_summary}</p>}
+              </li>
+            ))}
+          </ul>
+        </Card>
+      )}
       <Card title="Players" padded={false}>
         {summary.loading ? <Spinner /> : summary.error ? <ErrorBlock message={summary.error} onRetry={summary.reload} /> : (
           <div className="px-5"><Table headers={['Player', 'Availability', 'Plan', 'Expected return', `Adherence (${period.toLowerCase()})`]} empty={!rows.length}>

@@ -56,8 +56,9 @@ start_db; legacy
 for f in "$M"/2026110200000{4,5}_*.sql; do "${PSQL[@]}" -f "$f"; done
 ( cd "$ROOT/supabase/tests" && psql -h "$WORK" -p "$PORT" -U postgres -d postgres -v ON_ERROR_STOP=1 -q -o /dev/null -f rls_tests.sql )
 "${PSQL[@]}" -c "reset role"
-for f in "$M"/2026111[78]*.sql; do "${PSQL[@]}" -f "$f"; done
+for f in "$M"/202611[1-3][0-9]*.sql; do "${PSQL[@]}" -f "$f"; done
 ( cd "$ROOT/supabase/tests" && psql -h "$WORK" -p "$PORT" -U postgres -d postgres -v ON_ERROR_STOP=1 -q -o /dev/null -f athlete_tests.sql )
 ( cd "$ROOT/supabase/tests" && psql -h "$WORK" -p "$PORT" -U postgres -d postgres -v ON_ERROR_STOP=1 -q -o /dev/null -f registration_tests.sql )
+( cd "$ROOT/supabase/tests" && psql -h "$WORK" -p "$PORT" -U postgres -d postgres -v ON_ERROR_STOP=1 -q -o /dev/null -f phase1_tests.sql )
 stop_db
 echo "Database test suite completed successfully."
