@@ -3,7 +3,7 @@ import { posLabel } from '../../lib/format';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import clsx from 'clsx';
 import {
-  ClipboardCheck, UserCheck, Inbox, HeartHandshake, Megaphone,
+  ClipboardCheck, UserCheck, Inbox, HeartHandshake, Megaphone, Trophy, Dumbbell, Waves,
   Activity, BarChart3, CalendarCheck2, ClipboardList, Download, FileStack, FileText, HeartPulse, LayoutDashboard,
   LogOut, Menu, Plus, Search, Settings, Stethoscope, UserPlus, Users, X, Zap, History, BadgeCheck, Footprints, Layers, Shield, KeyRound,
 } from 'lucide-react';
@@ -36,6 +36,11 @@ const NAV: { group: string; items: NavItem[] }[] = [
     { to: '/inbox', label: 'Medical Inbox', icon: <Inbox className="h-[18px] w-[18px]" />, show: (c) => c.viewMedical, badge: 'cases' },
     { to: '/wellness', label: 'Athlete Wellness', icon: <HeartHandshake className="h-[18px] w-[18px]" />, show: (c) => c.viewMedical },
     { to: '/messages', label: 'Messages', icon: <Megaphone className="h-[18px] w-[18px]" />, show: (c) => c.isPhysician },
+  ] },
+  { group: 'Performance', items: [
+    { to: '/matches', label: 'Matches', icon: <Trophy className="h-[18px] w-[18px]" />, show: (c) => c.isStaff },
+    { to: '/training', label: 'Training Load', icon: <Dumbbell className="h-[18px] w-[18px]" />, show: (c) => c.isStaff },
+    { to: '/recovery', label: 'Recovery', icon: <Waves className="h-[18px] w-[18px]" />, show: (c) => c.isStaff },
   ] },
   { group: 'Clinical', items: [
     { to: '/examinations', label: 'Medical Examinations', icon: <Stethoscope className="h-[18px] w-[18px]" />, show: (c) => c.viewMedical },

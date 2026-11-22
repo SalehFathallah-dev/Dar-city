@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import clsx from 'clsx';
-import { Activity, AlertTriangle, CalendarClock, ClipboardX, Inbox, Pill, ShieldAlert, UserX } from 'lucide-react';
+import { Activity, AlertTriangle, CalendarClock, ClipboardX, Inbox, Pill, ShieldAlert, Trophy, UserX, Waves } from 'lucide-react';
 import * as api from '../lib/api';
 import { useAsync } from '../hooks/useAsync';
 import { useClub } from '../context/ClubContext';
@@ -14,13 +14,16 @@ export function AlertCenter() {
   const { clubId } = useClub();
   const today = todayISO();
   const data = useAsync(async () => {
-    const [cases, flags, doses, team] = await Promise.all([
+    const [cases, flags, doses, team, matches, recSessions] = await Promise.all([
       api.listCases({ status: 'open' }).catch(() => []),
       api.getWellnessFlags(today).catch(() => []),
       api.getTeamAdherence(clubId!, today, today).catch(() => []),
       api.getTeamAvailability().catch(() => []),
+      api.listMatches(today, addDays(today, 3)).catch(() => []),
+      api.listRecoverySessions(addDays(today, -7), today).catch(() => []),
     ]);
-    return { cases, flags, doses, team };
+    const att = await api.listAttendance(recSessions.map((s) => s.id)).catch(() => []);
+    return { cases, flags, doses, team, matches, recSessions, att };
   }, [clubId, today]);
   if (data.loading) return <Card title="Alerts"><Spinner /></Card>;
   const d = data.data;
@@ -43,6 +46,17 @@ export function AlertCenter() {
   if (dueNow.length) alerts.push({ key: 'doses', icon: <Pill className="h-5 w-5" />, tone: 'amber', title: `${dueNow.length} dose${dueNow.length > 1 ? 's' : ''} due today not confirmed yet`, detail: [...new Set(dueNow.map((r) => `${r.full_name}: ${r.name}`))].join(' · '), to: '/team-status' });
   const out = d.team.filter((p) => p.availability === 'NOT AVAILABLE');
   if (out.length) alerts.push({ key: 'out', icon: <UserX className="h-5 w-5" />, tone: 'blue', title: `${out.length} player${out.length > 1 ? 's' : ''} unavailable`, detail: out.map((p) => p.full_name).join(', '), to: '/availability' });
+  const nextMatches = d.matches.filter((m) => m.status === 'Scheduled');
+  if (nextMatches.length) {
+    const m = nextMatches[0];
+    const unavailable = d.team.filter((p) => p.availability === 'NOT AVAILABLE' || p.availability === 'UNDER MEDICAL REVIEW');
+    alerts.push({ key: 'match', icon: <Trophy className="h-5 w-5" />, tone: unavailable.length ? 'amber' : 'blue', title: `Match vs ${m.opponent} ${m.match_date === today ? 'today' : `on ${m.match_date.slice(5)}`}`,
+      detail: unavailable.length ? `Not available / under review: ${unavailable.map((p) => p.full_name).join(', ')}` : 'All players available', to: '/matches' });
+  }
+  const todaysRecovery = d.recSessions.filter((s) => s.session_date === today && s.status === 'Scheduled');
+  if (todaysRecovery.length) alerts.push({ key: 'rec', icon: <Waves className="h-5 w-5" />, tone: 'blue', title: `${todaysRecovery.length} recovery session(s) today`, detail: todaysRecovery.map((s) => `${s.kind}${s.start_time ? ` ${s.start_time.slice(0, 5)}` : ''}`).join(' · '), to: '/recovery' });
+  const missedRec = d.att.filter((a) => a.status === 'Absent');
+  if (missedRec.length) alerts.push({ key: 'missrec', icon: <Waves className="h-5 w-5" />, tone: 'amber', title: `${missedRec.length} missed recovery session(s) this week`, detail: [...new Set(missedRec.map((a) => d.team.find((p) => p.player_id === a.player_id)?.full_name ?? ''))].filter(Boolean).join(', '), to: '/recovery' });
   const soon = addDays(today, 2);
   const followups = d.team.filter((p) => p.next_followup_date && p.next_followup_date <= soon);
   if (followups.length) alerts.push({ key: 'fu', icon: <CalendarClock className="h-5 w-5" />, tone: 'blue', title: `${followups.length} medical review${followups.length > 1 ? 's' : ''} due within 2 days`, detail: followups.map((p) => p.full_name).join(', '), to: '/availability' });

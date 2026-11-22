@@ -47,6 +47,11 @@ const InboxPage = lazy(() => import('./pages/inbox/InboxPage'));
 const CaseDetailPage = lazy(() => import('./pages/inbox/CaseDetailPage'));
 const WellnessPage = lazy(() => import('./pages/WellnessPage'));
 const MessagesPage = lazy(() => import('./pages/MessagesPage'));
+const MatchesPage = lazy(() => import('./pages/MatchesPage'));
+const TrainingLoadPage = lazy(() => import('./pages/TrainingLoadPage'));
+const RecoveryPage = lazy(() => import('./pages/recovery/RecoveryPage'));
+const RecoverySessionPage = lazy(() => import('./pages/recovery/RecoverySessionPage'));
+const PlanPage = lazy(() => import('./pages/recovery/PlanPage'));
 const RequestsPage = lazy(() => import('./pages/RequestsPage'));
 const ClubSetupPage = lazy(() => import('./pages/ClubSetupPage'));
 const ClubsPage = lazy(() => import('./pages/clubs/ClubsPage'));
@@ -107,6 +112,11 @@ function ClubScopedApp() {
             <Route path="inbox/:id" element={<Guard need={(c) => c.viewMedical}><CaseDetailPage /></Guard>} />
             <Route path="wellness" element={<Guard need={(c) => c.viewMedical}><WellnessPage /></Guard>} />
             <Route path="messages" element={<Guard need={(c) => c.isPhysician}><MessagesPage /></Guard>} />
+            <Route path="matches" element={<Guard need={(c) => c.isStaff}><MatchesPage /></Guard>} />
+            <Route path="training" element={<Guard need={(c) => c.isStaff}><TrainingLoadPage /></Guard>} />
+            <Route path="recovery" element={<Guard need={(c) => c.isStaff}><RecoveryPage /></Guard>} />
+            <Route path="recovery/sessions/:id" element={<Guard need={(c) => c.isStaff}><RecoverySessionPage /></Guard>} />
+            <Route path="recovery/plans/:id" element={<Guard need={(c) => c.isStaff}><PlanPage /></Guard>} />
             <Route path="team-status" element={<Guard need={(c) => c.viewTeamSummary}><TeamStatusPage /></Guard>} />
             <Route path="requests" element={<Guard need={(c) => c.manageUsers}><RequestsPage /></Guard>} />
             <Route path="club-setup" element={<Guard need={(c) => c.manageUsers}><ClubSetupPage /></Guard>} />

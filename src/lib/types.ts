@@ -223,3 +223,52 @@ export interface WellnessResponse {
 export interface WellnessFlag { player_id: string; full_name: string; flag: string; detail: string; value: number | null; baseline: number | null }
 export interface AppNotification { id: string; club_id: string | null; kind: string; priority: 'normal' | 'high' | 'urgent'; title: string; body: string | null; link: string | null; created_at: string; read_at: string | null }
 export interface Announcement { id: string; club_id: string; kind: 'announcement' | 'instruction'; title: string; body: string; player_ids: string[] | null; include_staff: boolean; recipients: number; created_at: string }
+
+// ---------------- Phase 2 ----------------
+export interface Match {
+  id: string; club_id: string; opponent: string; competition: string | null; match_date: string; match_time: string | null; venue: string | null;
+  home_away: 'Home' | 'Away' | 'Neutral'; travel: string | null; status: 'Scheduled' | 'Played' | 'Postponed' | 'Cancelled'; result: string | null;
+  category: string | null; notes: string | null; created_at: string;
+}
+export const TRAINING_TYPES = ['Morning training', 'Evening training', 'Gym', 'Conditioning', 'Recovery', 'Match', 'Other'] as const;
+export interface TrainingSession {
+  id: string; club_id: string; session_date: string; start_time: string | null; session_type: (typeof TRAINING_TYPES)[number]; duration_minutes: number;
+  planned_rpe: number | null; season_phase: 'Pre-season' | 'In-season' | 'Off-season'; category: string | null; match_id: string | null; notes: string | null; created_at: string;
+}
+export const PARTICIPATION = ['Full', 'Modified', 'Individual', 'Absent', 'Excused', 'Injured'] as const;
+export interface Participation {
+  id: string; session_id: string; club_id: string; player_id: string; status: (typeof PARTICIPATION)[number]; duration_minutes: number | null;
+  rpe: number | null; session_load: number | null; minutes_played: number | null; notes: string | null;
+}
+export const RECOVERY_KINDS = ['Ice bath', 'Active recovery', 'Compression boots', 'Mobility', 'Stretching', 'Massage', 'Foam rolling', 'Recovery gym', 'Other'] as const;
+export interface RecoverySession {
+  id: string; club_id: string; plan_id: string | null; kind: (typeof RECOVERY_KINDS)[number]; session_date: string; start_time: string | null;
+  recommended_temp_c: number | null; actual_temp_c: number | null; recommended_minutes: number | null; protocol: string | null; precautions: string | null;
+  supervisor: string | null; status: 'Scheduled' | 'Completed' | 'Cancelled'; notes: string | null; created_at: string;
+}
+export const ATTENDANCE = ['Assigned', 'Present', 'Absent', 'Excused', 'Declined', 'Completed', 'Partially completed'] as const;
+export interface RecoveryAttendance {
+  id: string; session_id: string; club_id: string; player_id: string; status: (typeof ATTENDANCE)[number]; start_time: string | null; end_time: string | null;
+  duration_minutes: number | null; water_temp_c: number | null; adverse_symptoms: string | null; supervisor: string | null; notes: string | null;
+}
+export interface RecoveryRestriction {
+  id: string; club_id: string; player_id: string; intervention: string; level: 'Contraindicated' | 'Modified'; instructions: string | null;
+  reason: string | null; valid_until: string | null; is_active: boolean; created_at: string;
+}
+export interface RecoveryFlag { player_id: string; intervention: string; level: 'Contraindicated' | 'Modified'; instructions: string | null; valid_until: string | null }
+export const PLAN_DAYS = ['MD-3', 'MD-2', 'MD-1', 'MD', 'MD+1', 'MD+2', 'MD+3'] as const;
+export const PLAN_CATEGORIES = ['Active recovery', 'Cold water immersion', 'Mobility', 'Sleep', 'Nutrition', 'Hydration', 'Compression', 'Massage', 'Training load', 'Other'] as const;
+export interface RecoveryPlan {
+  id: string; club_id: string; match_id: string | null; title: string; interval_label: string | null; status: 'Proposed' | 'Approved' | 'Archived';
+  player_ids: string[] | null; notes: string | null; approved_by: string | null; approved_at: string | null; created_at: string;
+}
+export interface RecoveryPlanItem {
+  id: string; plan_id: string; club_id: string; day_label: (typeof PLAN_DAYS)[number]; item_date: string; category: (typeof PLAN_CATEGORIES)[number];
+  recommendation: string; sort_order: number; player_overrides: Record<string, string>;
+}
+export interface MySchedule {
+  training: { id: string; session_date: string; start_time: string | null; session_type: string; duration_minutes: number; notes: string | null }[];
+  matches: { id: string; opponent: string; competition: string | null; match_date: string; match_time: string | null; venue: string | null; home_away: string; status: string }[];
+  recovery: { id: string; kind: string; session_date: string; start_time: string | null; recommended_minutes: number | null; recommended_temp_c: number | null; protocol: string | null; precautions: string | null; status: string }[];
+  plan: { plan: string; day_label: string; item_date: string; category: string; recommendation: string }[];
+}

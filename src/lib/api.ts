@@ -1,10 +1,11 @@
-import { supabase, unwrap } from './supabase';
+import { friendlyError, supabase, unwrap } from './supabase';
 import type {
   BrandSettings, Club, ClubMember, Availability, AuditLog, Clearance, EmergencyContact, Examination, ExamFinding, Exposure, Followup, Injury,
   MedicalDocument, MedicalHistory, Player, Profile, RehabProgram, RehabSession, RtpAssessment, Season,
   TeamAvailabilityRow, Treatment, Prescription, AthletePortal, TeamSummaryRow, AdherenceRow, AthleteAccount,
   ClubCategory, StaffMember, RegistrationRow, MyRegistration, RecoveryView,
   MedicalCase, CaseMessage, CaseFile, CaseDisclosure, MyCase, StaffCaseRow, WellnessSettings, WellnessResponse, WellnessFlag, AppNotification, Announcement,
+  Match, TrainingSession, Participation, RecoverySession, RecoveryAttendance, RecoveryRestriction, RecoveryFlag, RecoveryPlan, RecoveryPlanItem, MySchedule,
 } from './types';
 import { ALLOWED_DOC_TYPES, APP, MAX_DOC_BYTES, MAX_PHOTO_BYTES } from './constants';
 
@@ -708,3 +709,111 @@ export async function provisionAccount(target: { player_id: string } | { staff_m
 export async function generateNewPassword(userId: string): Promise<{ username: string; password: string }> {
   return adminCall({ action: 'reset_password', user_id: userId });
 }
+
+// ================= Phase 2: matches, training load, recovery =================
+export async function listMatches(from?: string, to?: string): Promise<Match[]> {
+  let q = supabase.from('matches').select('*').eq('club_id', requireClub()).order('match_date').order('match_time', { nullsFirst: false });
+  if (from) q = q.gte('match_date', from);
+  if (to) q = q.lte('match_date', to);
+  return unwrap(await q);
+}
+export async function saveMatch(m: Partial<Match>): Promise<Match> {
+  const row = clean({ ...m } as Row); delete row.created_at;
+  if (m.id) { delete row.id; delete row.club_id; return unwrap(await supabase.from('matches').update(row).eq('id', m.id).select().single()); }
+  delete row.id;
+  return unwrap(await supabase.from('matches').insert({ ...row, club_id: requireClub() }).select().single());
+}
+export async function deleteMatch(id: string) { unwrap(await supabase.from('matches').delete().eq('id', id).select('id')); }
+
+export async function listTraining(from: string, to: string): Promise<TrainingSession[]> {
+  return unwrap(await supabase.from('training_sessions').select('*').eq('club_id', requireClub()).gte('session_date', from).lte('session_date', to).order('session_date').order('start_time', { nullsFirst: false }));
+}
+export async function listParticipation(sessionIds: string[]): Promise<Participation[]> {
+  if (!sessionIds.length) return [];
+  const out: Participation[] = [];
+  for (let i = 0; i < sessionIds.length; i += 150) out.push(...unwrap(await supabase.from('training_participation').select('*').in('session_id', sessionIds.slice(i, i + 150))) as Participation[]);
+  return out;
+}
+export async function saveTraining(s: Partial<TrainingSession>, participation: Partial<Participation>[]): Promise<TrainingSession> {
+  const row = clean({ ...s } as Row); delete row.created_at;
+  let saved: TrainingSession;
+  if (s.id) { delete row.id; delete row.club_id; saved = unwrap(await supabase.from('training_sessions').update(row).eq('id', s.id).select().single()); }
+  else { delete row.id; saved = unwrap(await supabase.from('training_sessions').insert({ ...row, club_id: requireClub() }).select().single()); }
+  if (participation.length) {
+    const rows = participation.map((p) => ({ session_id: saved.id, player_id: p.player_id, status: p.status ?? 'Full', duration_minutes: p.duration_minutes ?? null, rpe: p.rpe ?? null, minutes_played: p.minutes_played ?? null, notes: p.notes ?? null }));
+    unwrap(await supabase.from('training_participation').upsert(rows, { onConflict: 'session_id,player_id' }).select('id'));
+  }
+  return saved;
+}
+export async function deleteTraining(id: string) { unwrap(await supabase.from('training_sessions').delete().eq('id', id).select('id')); }
+
+export async function listRecoverySessions(from: string, to: string): Promise<RecoverySession[]> {
+  return unwrap(await supabase.from('recovery_sessions').select('*').eq('club_id', requireClub()).gte('session_date', from).lte('session_date', to).order('session_date', { ascending: false }).order('start_time', { nullsFirst: false }));
+}
+export async function getRecoverySession(id: string): Promise<{ s: RecoverySession; attendance: RecoveryAttendance[] }> {
+  const [s, a] = await Promise.all([supabase.from('recovery_sessions').select('*').eq('id', id).single(), supabase.from('recovery_attendance').select('*').eq('session_id', id)]);
+  return { s: unwrap(s), attendance: unwrap(a) };
+}
+export async function saveRecoverySession(s: Partial<RecoverySession>, assignPlayerIds: string[] = []): Promise<RecoverySession> {
+  const row = clean({ ...s } as Row); delete row.created_at;
+  let saved: RecoverySession;
+  if (s.id) { delete row.id; delete row.club_id; saved = unwrap(await supabase.from('recovery_sessions').update(row).eq('id', s.id).select().single()); }
+  else { delete row.id; saved = unwrap(await supabase.from('recovery_sessions').insert({ ...row, club_id: requireClub() }).select().single()); }
+  for (const pid of assignPlayerIds) {
+    const { error } = await supabase.from('recovery_attendance').upsert({ session_id: saved.id, player_id: pid, status: 'Assigned' }, { onConflict: 'session_id,player_id', ignoreDuplicates: true });
+    if (error) throw new Error(friendlyError(error));
+  }
+  return saved;
+}
+export async function deleteRecoverySession(id: string) { unwrap(await supabase.from('recovery_sessions').delete().eq('id', id).select('id')); }
+export async function saveAttendance(a: Partial<RecoveryAttendance> & { session_id: string; player_id: string }) {
+  const row = clean({ ...a } as Row); delete row.id; delete row.club_id;
+  return unwrap(await supabase.from('recovery_attendance').upsert(row, { onConflict: 'session_id,player_id' }).select().single()) as RecoveryAttendance;
+}
+export async function removeAttendance(sessionId: string, playerId: string) {
+  unwrap(await supabase.from('recovery_attendance').delete().eq('session_id', sessionId).eq('player_id', playerId).select('id'));
+}
+export async function listAttendance(sessionIds: string[]): Promise<RecoveryAttendance[]> {
+  if (!sessionIds.length) return [];
+  const out: RecoveryAttendance[] = [];
+  for (let i = 0; i < sessionIds.length; i += 150) out.push(...unwrap(await supabase.from('recovery_attendance').select('*').in('session_id', sessionIds.slice(i, i + 150))) as RecoveryAttendance[]);
+  return out;
+}
+
+export async function listRestrictions(): Promise<RecoveryRestriction[]> {
+  return unwrap(await supabase.from('recovery_restrictions').select('*').eq('club_id', requireClub()).order('created_at', { ascending: false }));
+}
+export async function saveRestriction(r: Partial<RecoveryRestriction>) {
+  const row = clean({ ...r } as Row); delete row.created_at; delete row.club_id;
+  if (r.id) { delete row.id; return unwrap(await supabase.from('recovery_restrictions').update(row).eq('id', r.id).select().single()); }
+  delete row.id;
+  return unwrap(await supabase.from('recovery_restrictions').insert(row).select().single());
+}
+export async function getRecoveryFlags(date?: string): Promise<RecoveryFlag[]> {
+  return unwrap(await supabase.rpc('get_recovery_flags', { p_club_id: requireClub(), p_date: date ?? new Date().toISOString().slice(0, 10) }));
+}
+
+export async function listPlans(): Promise<RecoveryPlan[]> {
+  return unwrap(await supabase.from('recovery_plans').select('*').eq('club_id', requireClub()).neq('status', 'Archived').order('created_at', { ascending: false }));
+}
+export async function getPlan(id: string): Promise<{ plan: RecoveryPlan; items: RecoveryPlanItem[] }> {
+  const [p, i] = await Promise.all([supabase.from('recovery_plans').select('*').eq('id', id).single(), supabase.from('recovery_plan_items').select('*').eq('plan_id', id).order('item_date').order('sort_order')]);
+  return { plan: unwrap(p), items: unwrap(i) };
+}
+export async function createPlan(plan: Partial<RecoveryPlan>, items: Omit<RecoveryPlanItem, 'id' | 'plan_id' | 'club_id'>[]): Promise<RecoveryPlan> {
+  const saved: RecoveryPlan = unwrap(await supabase.from('recovery_plans').insert({ ...clean(plan as Row), club_id: requireClub(), status: 'Proposed' }).select().single());
+  if (items.length) unwrap(await supabase.from('recovery_plan_items').insert(items.map((it) => ({ ...it, plan_id: saved.id }))).select('id'));
+  return saved;
+}
+export async function updatePlan(id: string, patch: Partial<RecoveryPlan>) {
+  return unwrap(await supabase.from('recovery_plans').update(clean(patch as Row)).eq('id', id).select().single()) as RecoveryPlan;
+}
+export async function deletePlan(id: string) { unwrap(await supabase.from('recovery_plans').delete().eq('id', id).select('id')); }
+export async function savePlanItem(it: Partial<RecoveryPlanItem>) {
+  const row = clean({ ...it } as Row); delete row.club_id;
+  if (it.id) { delete row.id; return unwrap(await supabase.from('recovery_plan_items').update(row).eq('id', it.id).select().single()); }
+  delete row.id;
+  return unwrap(await supabase.from('recovery_plan_items').insert(row).select().single());
+}
+export async function deletePlanItem(id: string) { unwrap(await supabase.from('recovery_plan_items').delete().eq('id', id).select('id')); }
+export async function mySchedule(from: string, to: string): Promise<MySchedule> { return unwrap(await supabase.rpc('my_schedule', { p_from: from, p_to: to })); }

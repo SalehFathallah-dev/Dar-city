@@ -15,7 +15,8 @@ import { NotificationBell } from '../../components/NotificationBell';
 import { ReportIssue } from './ReportIssue';
 import { WellnessForm } from './WellnessForm';
 import { MyCasesSection } from './MyCasesSection';
-import type { MyCase, WellnessResponse } from '../../lib/types';
+import { MyScheduleSection } from './MyScheduleSection';
+import type { MyCase, MySchedule, WellnessResponse } from '../../lib/types';
 import { AlertTriangle, ClipboardList } from 'lucide-react';
 
 const DAYS_BACK = 6;
@@ -37,10 +38,11 @@ export default function AthletePortalPage() {
   const [cases, setCases] = useState<MyCase[]>([]);
   const [wellness, setWellness] = useState<{ settings: { pre_enabled: boolean; post_enabled: boolean; reminder_time: string }; responses: WellnessResponse[] } | null>(null);
   const [reportOpen, setReportOpen] = useState(false);
+  const [schedule, setSchedule] = useState<MySchedule | null>(null);
   const [formKind, setFormKind] = useState<'pre' | 'post' | null>(null);
   const loadExtras = useCallback(async () => {
-    const [c, w] = await Promise.all([api.myCases().catch(() => []), api.myWellness(today, today).catch(() => null)]);
-    setCases(c); setWellness(w);
+    const [c, w, sc] = await Promise.all([api.myCases().catch(() => []), api.myWellness(today, today).catch(() => null), api.mySchedule(today, addDays(today, 7)).catch(() => null)]);
+    setCases(c); setWellness(w); setSchedule(sc);
     return w;
   }, [today]);
 
@@ -125,6 +127,7 @@ export default function AthletePortalPage() {
             </section>
           );
         })()}
+        {schedule && <MyScheduleSection s={schedule} />}
         <MyCasesSection cases={cases} onChanged={() => void loadExtras()} />
         {/* Status */}
         <section className="overflow-hidden rounded-2xl bg-brand-navy text-white shadow-card">
