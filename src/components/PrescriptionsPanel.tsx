@@ -142,7 +142,7 @@ function PrescriptionModal({ value, playerId, injuries, onClose, onSaved }: { va
             <Input type="time" value={newTime} onChange={(e) => setNewTime(e.target.value)} className="!w-32" />
             <Button size="sm" variant="secondary" icon={<Plus className="h-4 w-4" />} onClick={() => { if (newTime && !times.includes(newTime)) set('schedule_times', [...times, newTime].sort()); setNewTime(''); }}>Add time</Button>
           </div>
-          <p className="mt-1 text-xs text-neutral-500">No time = once a day at any time. The player gets a phone reminder at each time.</p>
+          <p className="mt-1 text-xs text-neutral-500">No time = once a day at any time. The player sees each dose time in the app and confirms it.</p>
         </div>
         <div>
           <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-neutral-600">Days</p>

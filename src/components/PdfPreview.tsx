@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Download, ExternalLink, FileText, Printer } from 'lucide-react';
 import { Button, Modal, Spinner } from './ui';
 import { downloadBlob } from '../lib/csv';
-import { isNative, openFile } from '../lib/native';
+import { isMobile, openFile } from '../lib/native';
 import { logEvent } from '../lib/api';
 import type { GeneratedReport } from '../lib/reports';
 import { useToast } from '../context/ToastContext';
@@ -35,7 +35,7 @@ export function PdfPreviewModal({ report, onClose }: { report: GeneratedReport |
     return () => { URL.revokeObjectURL(u); setUrl(null); };
   }, [report]);
   if (!report) return null;
-  if (isNative()) {
+  if (isMobile()) {
     return (
       <Modal open onClose={onClose} title={report.title}
         footer={<>

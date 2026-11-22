@@ -3,24 +3,16 @@
   "private": true,
   "version": "1.0.0",
   "type": "module",
-  "description": "Dr. Saleh Fathullah \u2013 Orthopedic & Sports Medicine: medical records, athlete portal and team status (Android)",
+  "description": "Dr. Saleh Fathullah \u2013 Orthopedic & Sports Medicine: sports medicine platform (web app on Render)",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "typecheck": "tsc -b",
     "test": "vitest run",
-    "android": "npm run build && npx cap sync android",
     "test:db": "bash scripts/test-db.sh"
   },
   "dependencies": {
-    "@capacitor-community/file-opener": "^7.0.1",
-    "@capacitor/android": "^7.6.10",
-    "@capacitor/app": "^7.1.2",
-    "@capacitor/core": "^7.6.10",
-    "@capacitor/filesystem": "^7.1.9",
-    "@capacitor/local-notifications": "^7.0.7",
-    "@capacitor/share": "^7.0.4",
     "@fontsource/barlow-condensed": "^5.3.0",
     "@fontsource/inter": "^5.3.0",
     "@supabase/supabase-js": "~2.45.4",
@@ -34,7 +26,6 @@
     "recharts": "^2.13.3"
   },
   "devDependencies": {
-    "@capacitor/cli": "^7.6.10",
     "@types/node": "^22.9.0",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",

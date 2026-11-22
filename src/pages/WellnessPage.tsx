@@ -195,10 +195,9 @@ function SettingsCard({ value, onSaved }: { value: WellnessSettings | null | und
   return (
     <Card title={<span className="flex items-center gap-2"><Settings2 className="h-5 w-5 text-brand-gold" /> Questionnaire settings</span>}>
       <div className="space-y-4">
-        <Checkbox label="Daily pre-training questionnaire" checked={!!f.pre_enabled} onChange={(v) => setF({ ...f, pre_enabled: v })} description="Athletes see it every day in the app and get a daily phone reminder (Android)." />
+        <Checkbox label="Daily pre-training questionnaire" checked={!!f.pre_enabled} onChange={(v) => setF({ ...f, pre_enabled: v })} description="Athletes see it every day at the top of their screen in the app." />
         <Checkbox label="Post-training questionnaire (session RPE)" checked={!!f.post_enabled} onChange={(v) => setF({ ...f, post_enabled: v })} description="One entry per session: morning, evening, gym, conditioning, recovery, match." />
         <Grid cols={3}>
-          <Field label="Daily reminder time"><Input type="time" value={f.reminder_time ?? '09:00'} onChange={(e) => setF({ ...f, reminder_time: e.target.value })} /></Field>
           <Field label="Baseline window (days)"><Input type="number" min={7} max={120} {...n('baseline_days')} /></Field>
           <Field label="Minimum answers for a baseline"><Input type="number" min={3} max={60} {...n('min_baseline')} /></Field>
           <Field label="Flag: fatigue above baseline by"><Input type="number" step="0.5" {...n('fatigue_rise')} /></Field>

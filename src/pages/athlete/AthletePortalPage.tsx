@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import clsx from 'clsx';
 import {
-  Activity, Bell, BellOff, Check, ChevronLeft, ChevronRight, Clock, Dumbbell, HeartPulse, KeyRound, LogOut, Pill, RefreshCw, Undo2, X,
+  Activity, Check, ChevronLeft, ChevronRight, Clock, Dumbbell, HeartPulse, KeyRound, LogOut, Pill, RefreshCw, Undo2, X,
 } from 'lucide-react';
 import * as api from '../../lib/api';
 import { useAuth } from '../../context/AuthContext';
@@ -11,8 +11,6 @@ import { KIND_LABEL_AR, WEEKDAYS_AR } from '../../lib/constants';
 import type { AthletePortal, DoseEntry } from '../../lib/types';
 import { Badge, Button, ErrorBlock, Logo, Spinner, statusColor } from '../../components/ui';
 import { ChangePasswordModal } from '../../components/ChangePasswordModal';
-import { cancelAllReminders, remindersWanted, setRemindersWanted, syncReminders } from '../../lib/reminders';
-import { isNative } from '../../lib/native';
 import { NotificationBell } from '../../components/NotificationBell';
 import { ReportIssue } from './ReportIssue';
 import { WellnessForm } from './WellnessForm';
@@ -36,7 +34,6 @@ export default function AthletePortalPage() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [pwOpen, setPwOpen] = useState(false);
-  const [reminders, setReminders] = useState(remindersWanted());
   const [cases, setCases] = useState<MyCase[]>([]);
   const [wellness, setWellness] = useState<{ settings: { pre_enabled: boolean; post_enabled: boolean; reminder_time: string }; responses: WellnessResponse[] } | null>(null);
   const [reportOpen, setReportOpen] = useState(false);
@@ -57,11 +54,8 @@ export default function AthletePortalPage() {
   }, [today]);
 
   useEffect(() => {
-    void load().then((p) => {
-      void loadExtras().then((w) => {
-        if (p) void syncReminders(p, w?.settings).then((r) => { if (r === 'denied') toast.error('اسمح للتطبيق بالإشعارات حتى تصلك التذكيرات.'); });
-      });
-    });
+    void load();
+    void loadExtras();
     // Refresh when the app comes back to the foreground.
     const onVis = () => { if (document.visibilityState === 'visible') { void load(); void loadExtras(); } };
     document.addEventListener('visibilitychange', onVis);
@@ -86,17 +80,6 @@ export default function AthletePortalPage() {
       if (status === 'taken') toast.success('تم التسجيل ✓ بالتوفيق');
       await load();
     } catch (e) { toast.error((e as Error).message); } finally { setBusy(null); }
-  };
-
-  const toggleReminders = async () => {
-    const on = !reminders;
-    setRemindersWanted(on); setReminders(on);
-    if (!on) { await cancelAllReminders(); toast.success('تم إيقاف التذكيرات'); return; }
-    if (data) {
-      const r = await syncReminders(data, wellness?.settings);
-      if (r === 'scheduled') toast.success('تم تفعيل التذكيرات في مواعيد الجرعات');
-      else if (r === 'denied') toast.error('اسمح للتطبيق بالإشعارات من إعدادات الهاتف.');
-    }
   };
 
   if (error && !data) return <div className="p-6" dir="rtl"><ErrorBlock message={error} onRetry={() => void load()} /><Button className="mt-4" variant="secondary" onClick={() => void signOut()}>تسجيل الخروج</Button></div>;
@@ -209,11 +192,6 @@ export default function AthletePortalPage() {
                 );
               })}
             </ul>
-          )}
-          {isNative() && (
-            <button onClick={() => void toggleReminders()} className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-neutral-300 py-2.5 text-sm font-semibold text-neutral-600">
-              {reminders ? <><Bell className="h-4 w-4 text-brand-gold" /> التذكير بالمواعيد مفعّل</> : <><BellOff className="h-4 w-4" /> تفعيل التذكير بالمواعيد</>}
-            </button>
           )}
         </section>
 

@@ -1,6 +1,6 @@
 # DR. SALEH FATHULLAH – ORTHOPEDIC & SPORTS MEDICINE
 
-**Orthopedic & Sports Injuries Medical System – Android app (APK) with an online database**
+**Orthopedic & Sports Injuries Medical System – web app on Render (phones and computers) with an online database**
 
 One app, three kinds of account (the screen depends on who signs in):
 
@@ -16,7 +16,6 @@ One app, three kinds of account (the screen depends on who signs in):
 |---|---|
 | App | React 18 · TypeScript · Vite · Tailwind CSS · Recharts · jsPDF |
 | Backend | Supabase (PostgreSQL + Row Level Security, Auth, private Storage, Edge Function `admin-users`) |
-| Android | Capacitor 7 (`android/`), signed release APK, local notifications for dose reminders |
 
 Security is enforced in the database: athletes are not "staff", so every table policy denies them;
 they reach only their own data through `get_my_portal()` and `log_dose()`. Staff summaries come from
@@ -28,10 +27,11 @@ Migrations are in `supabase/migrations` (apply in order). `npm run test:db` runs
 throw-away local PostgreSQL clusters, including `supabase/tests/athlete_tests.sql` for the athlete
 portal, prescriptions, dose log and staff-summary rules.
 
-## Getting the APK
+## Hosting
 
-Every push to the branch runs `.github/workflows/android-apk.yml`, which builds a signed APK and publishes
-it as a GitHub **Release** (`Dr-Saleh-Fathullah.apk`). Updates install over the previous version.
+The web app is served by **Render** as a free static site (`render.yaml` Blueprint). Every push to the
+branch rebuilds and publishes it automatically: https://dr-saleh-fathullah-9t2g.onrender.com
+On a phone: open the link in the browser and use "Add to Home Screen".
 
 ## Development
 
@@ -40,5 +40,4 @@ npm install
 npm run dev          # http://localhost:5173
 npm test             # unit tests
 npm run test:db      # database + security tests (PostgreSQL 15+ binaries)
-npm run android      # build + sync into the Android project
 ```

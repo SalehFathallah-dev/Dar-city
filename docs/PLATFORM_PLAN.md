@@ -6,7 +6,7 @@ Audit date: 2026-11-22 · Owner: Dr. Saleh Fathullah (team physician, primary me
 
 | Layer | Technology |
 |---|---|
-| Client | React 18 + TypeScript + Vite + Tailwind, Recharts, jsPDF. One code base for Android (Capacitor 7 APK), iPhone/computers (web on Render/Netlify) |
+| Client | React 18 + TypeScript + Vite + Tailwind, Recharts, jsPDF. Web app on Render (phones via "Add to Home Screen" and computers) |
 | Backend | Supabase project `hjzefycoaqvvfeetytqz` (Frankfurt): PostgreSQL with Row Level Security on every table, Supabase Auth (username accounts `name@dsf.local`), private Storage buckets, Edge Functions `admin-users` and `self-register` |
 | Security model | Roles in `profiles.role` (`team_physician`, `assistant_medical_staff`, `team_manager`, `head_coach`, `super_admin`, `athlete`). Club isolation through `club_members` + `has_club_access()`. Athletes are not staff: they reach only their own data through SECURITY DEFINER functions. Full audit trail (`audit_logs`, triggers on every clinical table). |
 | Tests | `npm test` (unit), `npm run test:db` (migrations + RLS + business rules on throw-away PostgreSQL), end-to-end runs with Playwright against the real project |
@@ -18,7 +18,7 @@ Audit date: 2026-11-22 · Owner: Dr. Saleh Fathullah (team physician, primary me
 - Medical examinations (systematic + orthopedic findings, vitals, clearance)
 - Injuries, follow-ups, treatments, rehabilitation programmes (7 phases) and sessions, return-to-play assessments, clearance history
 - Availability (internal vs staff notes), team status for staff, recovery progress for staff (no clinical detail)
-- Prescriptions (medication / supplement / exercise / treatment) with times and weekdays, athlete dose confirmation, adherence grid, phone reminders (Android)
+- Prescriptions (medication / supplement / exercise / treatment) with times and weekdays, athlete dose confirmation, adherence grid
 - Athlete portal (Arabic): status, doses, rehab programme, injuries
 - Documents (private storage), PDF reports, CSV exports, analytics, audit log
 
@@ -40,7 +40,7 @@ Audit date: 2026-11-22 · Owner: Dr. Saleh Fathullah (team physician, primary me
 | 12 Appointments | **Missing** |
 | 13 Doctor command centre | Partial (dashboard). **Missing:** alert centre |
 | 14 Reports | Partial (PDF/CSV). **Missing:** wellness, load, recovery, supplement, inventory, match reports |
-| 15 Notifications | Partial (dose reminders on Android). **Missing:** in-app notification centre, announcements, instructions |
+| 15 Notifications | Partial. **Missing:** in-app notification centre, announcements, instructions |
 | 16 Travel & emergency | **Missing** |
 | 17 Security | Present (RLS, audit, private storage, idle sign-out). To extend to every new table |
 | 19 Arabic/English | Athlete portal Arabic RTL; staff screens English LTR |
@@ -65,4 +65,4 @@ All new tables: `club_id` derived from the player, RLS, audit trigger, athlete a
 4. **Medication and supplements** – inventory, team assignment, administration log, safety checks, expiry/stock alerts
 5. **Analytics and reporting** – new PDF/Excel reports, advanced dashboard, travel and emergency module
 
-Each phase: database tests for every permission rule, end-to-end test on the real project, then deployment (APK + web).
+Each phase: database tests for every permission rule, end-to-end test on the real project, then deployment to Render.
